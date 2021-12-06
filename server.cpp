@@ -15,6 +15,7 @@
 
 //extern int errno;
 
+// convert address (from the professor's course)
 char *conv_addr(struct sockaddr_in address)
 {
     static char str[25];
@@ -27,6 +28,7 @@ char *conv_addr(struct sockaddr_in address)
     return (str);
 }
 
+// sqlite3 callback for INSERT operation
 static int callback1(void *ans, int argc, char **argv, char **azColName)
 {
     char query[1000];
@@ -48,8 +50,6 @@ int main()
     struct timeval tv;
     int sd, client;
     int optval = 1;
-    // int fd;
-    // int nfds;
     socklen_t len = sizeof(from);
     char received[1000];
     char toSend[1000];
@@ -71,21 +71,21 @@ int main()
     server.sin_addr.s_addr = htonl(INADDR_ANY);
     server.sin_port = htons(PORT);
 
-    /* atasam socketul */
+    // bind socket
     if (bind(sd, (struct sockaddr *)&server, sizeof(struct sockaddr)) == -1)
     {
-        perror("[server] Error on bind().\n");
+        perror("[Server] Error on bind().\n");
         return errno;
     }
 
-    /* punem serverul sa asculte daca vin clienti sa se conecteze */
+    // listen for new connections
     if (listen(sd, 5) == -1)
     {
-        perror("[server] Error on listen().\n");
+        perror("[Server] Error on listen().\n");
         return errno;
     }
-
-    printf("[server] Waiting for connections on port %d...\n", PORT);
+    // let server watcher know what's going on
+    printf("[Server] Waiting for connections on port %d...\n", PORT);
     fflush(stdout);
 
     while (true)
@@ -99,17 +99,20 @@ int main()
         }
 
         int pid;
+        // if fork unsuccessful and client wasn't created
         if (-1 == (pid = fork()))
         {
             close(client);
             return 1;
         }
+        // if client exited or server ran into error
         else if (pid > 0)
         {
             close(client);
             sleep(1);
             continue;
         }
+        // child for every new client
         else if (pid == 0)
         {
             sqlite3 *db;
@@ -156,11 +159,11 @@ int main()
                     close(client);
                     break;
                 }
-                // char* command = (char*)malloc(strlen(received + 1));
-                // strcpy(command, received);
+                
                 printf("[Server] Message received from client: %s\n", received);
                 fflush(stdout);
 
+                // check for exit from client and close it if check passes
                 if (strncmp(received, "exit", 4) == 0)
                 {
                     printf("[Server] CLIENT EXIT.\n");
@@ -169,6 +172,7 @@ int main()
                     close(client);
                     sqlite3_close(db);
                 }
+                // register user
                 else if (strncmp(received, "register", 8) == 0)
                 {
                     char userInfo[1000] = "INSERT INTO USERINFO VALUES ('";
@@ -234,6 +238,8 @@ int main()
                     }
                 }
                 else
+                // end of control sequence
+                // if reached, the command is considered unknown and user is informed
                 {
                     printf("[Server] User entered unkown command. Sending this info to client.\n");
                     fflush(stdout);
