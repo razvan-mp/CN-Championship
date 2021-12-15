@@ -12,8 +12,6 @@
 
 //extern int errno;
 
-int port;
-
 int main(int argc, char *argv[])
 {
     int sd;                    // descriptorul de socket
@@ -21,17 +19,7 @@ int main(int argc, char *argv[])
     char msg[1000];             // mesajul trimis
     char received[1000];
 
-    /* exista toate argumentele in linia de comanda? */
-    if (argc != 3)
-    {
-        printf("[client] Syntax: %s <ip_address> <port>\n", argv[0]);
-        return -1;
-    }
-
-    /* stabilim portul */
-    port = atoi(argv[2]);
-
-    /* cream socketul */
+    // create socket
     if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
         perror("[client] Eroare la socket().\n");
@@ -39,8 +27,8 @@ int main(int argc, char *argv[])
     }
 
     server.sin_family = AF_INET;
-    server.sin_addr.s_addr = inet_addr(argv[1]);
-    server.sin_port = htons(port);
+    server.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server.sin_port = htons(2728);
 
     if (connect(sd, (struct sockaddr *)&server, sizeof(struct sockaddr)) == -1)
     {

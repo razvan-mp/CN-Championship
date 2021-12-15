@@ -32,10 +32,25 @@ char *conv_addr(struct sockaddr_in address)
 static int callback1(void *ans, int argc, char **argv, char **azColName)
 {
     char query[1000];
+
     for (int i = 0; i < argc; i++)
     {
         strcat(query, argv[i]);
         strcat(query, " ");
+    }
+
+    return 0;
+}
+
+// sqlite3 callback for SELECT operation
+static int callback2(void *ans, int argc, char **argv, char **azColName)
+{
+    char *answer = (char *)ans;
+
+    for (int i = 0; i < argc; i++)
+    {
+        strcat(answer, argv[i]);
+        strcat(answer, ":");
     }
 
     return 0;
@@ -134,6 +149,7 @@ int main()
             }
 
             int logged = 0, userType = -1; // 0 - admin, 1 - user
+            char sql_command[4000], user[1000], pass[1000], mail[1000], type[1000];
             close(sd);
 
             if (write(client, "[Server] Enter command: ", strlen("[Server] Enter command: ") - 1) <= 0)
@@ -159,82 +175,164 @@ int main()
                     close(client);
                     break;
                 }
-                
+
                 printf("[Server] Message received from client: %s\n", received);
                 fflush(stdout);
 
                 // check for exit from client and close it if check passes
-                if (strncmp(received, "exit", 4) == 0)
+                if (strcmp(received, "exit") == 0)
                 {
                     printf("[Server] CLIENT EXIT.\n");
                     fflush(stdout);
-                    write(client, "[Server] CLIENT EXIT.\n", strlen("[Server] CLIENT EXIT.\n"));
+                    write(client, "[Server] CLIENT EXIT.\n", 22);
                     close(client);
                     sqlite3_close(db);
                 }
                 // register user
-                else if (strncmp(received, "register", 8) == 0)
+                else if (strcmp(received, "register") == 0)
                 {
-                    char userInfo[1000] = "INSERT INTO USERINFO VALUES ('";
-                    printf("[Server] Client requested register. Sending username request...\n");
-                    fflush(stdout);
-                    write(client, "[Server] Please provide a username: ", strlen("[Server] Please provide a username: "));
-                    bzero(received, 1000);
-                    read(client, received, sizeof(buffer));
-                    strcat(userInfo, received);
-                    strcat(userInfo, "', '");
-                    write(client, "[Server] Please provide a password: ", strlen("[Server] Please provide a password: "));
-                    bzero(received, 1000);
-                    read(client, received, sizeof(buffer));
-                    strcat(userInfo, received);
-                    strcat(userInfo, "', '");
-                    write(client, "[Server] Please provide your email address: ", strlen("[Server] Please provide your email address: "));
-                    bzero(received, 1000);
-                    read(client, received, sizeof(buffer));
-                    strcat(userInfo, received);
-                    strcat(userInfo, "', ");
-                    write(client, "[Server] Please provide an account type (admin/ regular): ", strlen("[Server] Please provide an account type (admin/ regular): "));
-                    bzero(received, 1000);
-                    read(client, received, sizeof(buffer));
-                    if (strncmp(received, "admin", 5) == 0)
+                    if (!logged)
                     {
-                        write(client, "[Server] Account created successfully.\n[Server] Enter command: ", strlen("[Server] Account created successfully.\n[Server] Enter command: "));
-                        strcat(userInfo, "0);");
-                        rc = sqlite3_exec(db, userInfo, callback1, 0, &zErrMsg);
+                        int uType;
+                        // set all strings to 0
+                        bzero(sql_command, 4000);
+                        bzero(user, 1000);
+                        bzero(pass, 1000);
+                        bzero(mail, 1000);
+                        bzero(type, 1000);
 
-                        if (rc != SQLITE_OK)
+                        printf("[Server] Client requested register. Sending username request...\n");
+                        fflush(stdout);
+                        write(client, "[Server] Please provide a username: ", 36);
+                        read(client, user, 1000);
+                        write(client, "[Server] Please provide a password: ", 36);
+                        read(client, pass, 1000);
+                        write(client, "[Server] Please provide your email address: ", 44);
+                        read(client, mail, 1000);
+                        write(client, "[Server] Please provide an account type (admin/ regular): ", 58);
+                        read(client, type, 1000);
+                        if (strcmp(type, "admin") == 0)
                         {
-                            printf("[Server] DB Error. Server will shut down.\n");
-                            close(client);
-                            return 1;
+                            uType = 0;
+                            // create sql operation string
+                            sprintf(sql_command, "INSERT INTO USERINFO VALUES ('%s', '%s', '%s', %d);", user, pass, mail, uType);
+
+                            write(client, "[Server] Account created successfully.\n[Server] Enter command: ", 63);
+                            rc = sqlite3_exec(db, sql_command, callback1, 0, &zErrMsg);
+
+                            if (rc != SQLITE_OK)
+                            {
+                                printf("[Server] DB Error. Server will shut down.\n");
+                                close(client);
+                                return 1;
+                            }
+                            else
+                            {
+                                printf("[Server] User information saved successfully.\n");
+                                fflush(stdout);
+                            }
+                        }
+                        else if (strcmp(received, "regular") == 0)
+                        {
+                            uType = 1;
+                            // create sql operation string
+                            sprintf(sql_command, "INSERT INTO USERINFO VALUES ('%s', '%s', '%s', %d);", user, pass, mail, uType);
+
+                            write(client, "[Server] Account created successfully.\n[Server] Enter command: ", 63);
+                            rc = sqlite3_exec(db, sql_command, callback1, 0, &zErrMsg);
+
+                            if (rc != SQLITE_OK)
+                            {
+                                printf("[Server] DB Error. Server will shut down.\n");
+                                close(client);
+                                return 1;
+                            }
+                            else
+                            {
+                                printf("[Server] User information saved successfully.\n");
+                                fflush(stdout);
+                            }
                         }
                         else
                         {
-                            printf("[Server] User information saved successfully.\n");
-                            fflush(stdout);
-                        }
-                    }
-                    else if (strncmp(received, "regular", 7) == 0)
-                    {
-                        write(client, "[Server] Account created successfully.\n[Server] Enter command: ", strlen("[Server] Account created successfully.\n[Server] Enter command: "));
-                        strcat(userInfo, "1);");
-                        rc = sqlite3_exec(db, userInfo, callback1, 0, &zErrMsg);
-
-                        if (rc != SQLITE_OK)
-                        {
-                            printf("[Server] DB Error. Server will shut down.\n");
-                            close(client);
-                            return 1;
-                        }
-                        else
-                        {
-                            printf("[Server] User information saved successfully.\n");
-                            fflush(stdout);
+                            write(client, "[Server] User account not created. Incorrect account type information. Please try again.\n[Server] Enter command: ", 113);
                         }
                     }
                     else
                     {
-                        write(client, "[Server] User account not created. Incorrect account type information. Please try again.\n[Server] Enter command: ", strlen("[Server] User account not created. Incorrect account type information. Please try again.\n[Server] Enter command: "));
+                        printf("[Server] User entered 'register' while logged in.\n");
+                        fflush(stdout);
+                        write(client, "[Server] Log out to use this command.\n[Server] Enter command: ", 63);
+                    }
+                }
+                else if (strcmp(received, "login") == 0)
+                {
+                    if (!logged)
+                    {
+                        char result[4000];
+                        printf("[Server] User requested login. Sending user and pass prompt...\n");
+                        fflush(stdout);
+
+                        write(client, "[Server] Enter your username: ", 30);
+                        bzero(user, 1000);
+                        read(client, user, 1000);
+
+                        bzero(sql_command, 4000);
+                        sprintf(sql_command, "SELECT NAME FROM USERINFO WHERE NAME='%s'", user);
+                        bzero(result, 4000);
+                        rc = sqlite3_exec(db, sql_command, callback2, result, &zErrMsg);
+
+                        if (strlen(result) > 1)
+                        {
+                            printf("[Server] username exists. Sending pass prompt...\n");
+                            fflush(stdout);
+                            write(client, "[Server] Enter your password: ", 30);
+
+                            bzero(pass, 1000);
+                            read(client, pass, 1000);
+
+                            bzero(sql_command, 4000);
+                            sprintf(sql_command, "SELECT NAME, PASS, TYPE FROM USERINFO WHERE NAME='%s' AND PASS='%s'", user, pass);
+                            bzero(result, 4000);
+                            rc = sqlite3_exec(db, sql_command, callback2, result, &zErrMsg);
+                            
+                            if (strlen(result) > 1)
+                            {
+                                char *typee = strtok(result, ":");
+                                typee = strtok(NULL, ":");
+                                typee = strtok(NULL, ":");
+                                logged = 1;
+                                userType = atoi(typee);
+                                printf("[Server] User/pass combo correct.\n");
+                                fflush(stdout);
+
+                                write(client, "[Server] Logged in successfully.\n[Server] Enter command: ", 57);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        printf("[Server] User entered 'login' while logged in.\n");
+                        fflush(stdout);
+                        write(client, "[Server] Log out to use this command.\n[Server] Enter command: ", 63);
+                    }
+                }
+                else if (strcmp(received, "logout") == 0)
+                {
+                    if (!logged)
+                    {
+                        printf("[Server] User tried logging out while not being logged in.\n");
+                        fflush(stdout);
+                        write(client, "[Server] You are not logged in. Command unavailable.\n[Server] Enter command: ", 77);
+                    }
+                    else
+                    {
+                        logged = 0;
+                        userType = -1;
+
+                        printf("[Server] User logged out.\n");
+                        fflush(stdout);
+                        write(client, "[Server] Logged out successfully.\n[Server] Enter command: ", 58);
                     }
                 }
                 else
@@ -243,7 +341,7 @@ int main()
                 {
                     printf("[Server] User entered unkown command. Sending this info to client.\n");
                     fflush(stdout);
-                    write(client, "[Server] Unknown command entered. Please check spelling and try again.\n[Server] Enter command: ", strlen("[Server] Unknown command entered. Please check spelling and try again.\n[Server] Enter command: "));
+                    write(client, "[Server] Unknown command entered. Please check spelling and try again.\n[Server] Enter command: ", 95);
                 }
             }
         }
