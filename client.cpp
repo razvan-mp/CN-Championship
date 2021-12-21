@@ -16,13 +16,13 @@ int main(int argc, char *argv[])
 {
     int sd;                    // descriptorul de socket
     struct sockaddr_in server; // structura folosita pentru conectare
-    char msg[1000];             // mesajul trimis
-    char received[1000];
+    char msg[5000];             // mesajul trimis
+    char received[5000];
 
     // create socket
     if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
-        perror("[client] Eroare la socket().\n");
+        perror("[Client] Error on socket().\n");
         return errno;
     }
 
@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
         return errno;
     }
 
-    if (read(sd, received, 1000) < 0)
+    if (read(sd, received, 5000) < 0)
     {
         perror("[Client] Error on read() from server.\n");
         return 1;
@@ -46,12 +46,12 @@ int main(int argc, char *argv[])
 
     while (true)
     {
-        bzero(msg, 1000);
-        read(0, msg, 1000);
+        bzero(msg, 5000);
+        read(0, msg, 5000);
 
         if (strncmp(msg, "exit", 4) == 0)
         {
-            write(sd, msg, 1000);
+            write(sd, msg, 5000);
             return 1;
         }
 
@@ -66,8 +66,8 @@ int main(int argc, char *argv[])
             fflush(stdout);
         }
 
-        bzero(msg, 1000);
-        if (read(sd, msg, 1000) < 0)
+        bzero(msg, 5000);
+        if (read(sd, msg, 5000) < 0)
         {
             perror("[Client] Error on read() from server.\n");
             return errno;
