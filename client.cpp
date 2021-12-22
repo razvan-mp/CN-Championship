@@ -60,11 +60,6 @@ int main(int argc, char *argv[])
             perror("[Client] Error on write() to the server.\n");
             return errno;
         }
-        else
-        {
-            printf("[Client] Message sent to server successfully.\n");
-            fflush(stdout);
-        }
 
         bzero(msg, 5000);
         if (read(sd, msg, 5000) < 0)
@@ -72,11 +67,7 @@ int main(int argc, char *argv[])
             perror("[Client] Error on read() from server.\n");
             return errno;
         }
-        else
-        {
-            printf("[Client] Read from server successfully.\n");
-            fflush(stdout);
-        }
+
         printf("%s", msg);
         fflush(stdout);
     }

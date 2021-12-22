@@ -219,57 +219,62 @@ int main()
                         fflush(stdout);
                         write(client, "[Server] Please provide a username: ", 36);
                         read(client, user, 1000);
-                        write(client, "[Server] Please provide a password: ", 36);
-                        read(client, pass, 1000);
-                        write(client, "[Server] Please provide your email address: ", 44);
-                        read(client, mail, 1000);
-                        write(client, "[Server] Please provide an account type (admin/ regular): ", 58);
-                        read(client, type, 1000);
-                        if (strcmp(type, "admin") == 0)
+
+                        // check if user already exists
+                        char result[4000];
+                        bzero(result, 4000);
+                        bzero(sql_command, 4000);
+                        sprintf(sql_command, "SELECT NAME FROM USERINFO WHERE NAME='%s'", user);
+                        bzero(result, 4000);
+                        rc = sqlite3_exec(db, sql_command, callback2, result, &zErrMsg);
+
+                        if (strlen(result) > 1)
                         {
-                            uType = 0;
-                            // create sql operation string
-                            sprintf(sql_command, "INSERT INTO USERINFO VALUES ('%s', '%s', '%s', %d);", user, pass, mail, uType);
-
-                            write(client, "[Server] Account created successfully.\n[Server] Enter command: ", 63);
-                            rc = sqlite3_exec(db, sql_command, callback1, 0, &zErrMsg);
-
-                            if (rc != SQLITE_OK)
-                            {
-                                printf("[Server] DB Error. Server will shut down.\n");
-                                close(client);
-                                return 1;
-                            }
-                            else
-                            {
-                                printf("[Server] User information saved successfully.\n");
-                                fflush(stdout);
-                            }
-                        }
-                        else if (strcmp(received, "regular") == 0)
-                        {
-                            uType = 1;
-                            // create sql operation string
-                            sprintf(sql_command, "INSERT INTO USERINFO VALUES ('%s', '%s', '%s', %d);", user, pass, mail, uType);
-
-                            write(client, "[Server] Account created successfully.\n[Server] Enter command: ", 63);
-                            rc = sqlite3_exec(db, sql_command, callback1, 0, &zErrMsg);
-
-                            if (rc != SQLITE_OK)
-                            {
-                                printf("[Server] DB Error. Server will shut down.\n");
-                                close(client);
-                                return 1;
-                            }
-                            else
-                            {
-                                printf("[Server] User information saved successfully.\n");
-                                fflush(stdout);
-                            }
+                            write(client, "[Server] User already exists! Try logging in.\n[Server] Enter command: ", 70);
                         }
                         else
                         {
-                            write(client, "[Server] User account not created. Incorrect account type information. Please try again.\n[Server] Enter command: ", 113);
+                            // check if user is in whitelist
+                            FILE *fp;
+                            char *line = NULL;
+                            size_t len = 0;
+                            ssize_t bytes_read;
+
+                            fp = fopen("whitelist.txt", "r");
+                            if (fp == NULL)
+                                exit(EXIT_FAILURE);
+
+                            uType = 1;
+                            while ((bytes_read = getline(&line, &len, fp)) != -1)
+                            {
+                                if (strncmp(user, line, strlen(line) - 1) == 0)
+                                    uType = 0;
+                            }
+
+                            fclose(fp);
+
+                            write(client, "[Server] Please provide a password: ", 36);
+                            read(client, pass, 1000);
+                            write(client, "[Server] Please provide your email address: ", 44);
+                            read(client, mail, 1000);
+
+                            // create sql operation string
+                            sprintf(sql_command, "INSERT INTO USERINFO VALUES ('%s', '%s', '%s', %d, 0);", user, pass, mail, uType);
+
+                            write(client, "[Server] Account created successfully.\n[Server] Enter command: ", 63);
+                            rc = sqlite3_exec(db, sql_command, callback1, 0, &zErrMsg);
+
+                            if (rc != SQLITE_OK)
+                            {
+                                printf("[Server] DB Error. Server will shut down.\n");
+                                close(client);
+                                return 1;
+                            }
+                            else
+                            {
+                                printf("[Server] User information saved successfully.\n");
+                                fflush(stdout);
+                            }
                         }
                     }
                     else
@@ -359,6 +364,58 @@ int main()
                         printf("[Server] User logged out.\n");
                         fflush(stdout);
                         write(client, "[Server] Logged out successfully.\n[Server] Enter command: ", 58);
+                    }
+                }
+                else if (strcmp(received, "add-admin") == 0)
+                {
+                    if (!logged)
+                    {
+                        printf("[Server] User tried adding admin while not being logged in.\n");
+                        fflush(stdout);
+                        write(client, "[Server] You are not logged in. Command unavailable.\n[Server] Enter command: ", 77);
+                    }
+                    else
+                    {
+                        write(client, "[Server] Provide username to add to whitelist: ", 47);
+
+                        char user_to_add[1000];
+                        bzero(user_to_add, 1000);
+                        read(client, user_to_add, 1000);
+
+                        // check if user is in whitelist
+                        int flag = 0; // user is not in whitelist
+                        FILE *fp;
+                        char *line = NULL;
+                        size_t len = 0;
+                        ssize_t bytes_read;
+
+                        fp = fopen("whitelist.txt", "r");
+                        if (fp == NULL)
+                            exit(EXIT_FAILURE);
+
+                        while ((bytes_read = getline(&line, &len, fp)) != -1)
+                        {
+                            if (strncmp(user_to_add, line, strlen(line) - 1) == 0)
+                                flag = 1;
+                        }
+
+                        fclose(fp);
+
+                        if (flag == 1)
+                        {
+                            write(client, "[Server] Username already whitelisted.\n[Server] Enter command: ", 63);
+                        }
+                        else
+                        {
+                            fp = fopen("whitelist.txt", "a");
+
+                            fprintf(fp, "%s", user_to_add);
+                            fprintf(fp, "\n");
+
+                            fclose(fp);
+
+                            write(client, "[Server] Added username to whitelist successfully.\n[Server] Enter command: ", 75);
+                        }
                     }
                 }
                 else if (strcmp(received, "create-championship") == 0)
@@ -542,7 +599,7 @@ int main()
                                 write(client, "[Server] Enter ID for championship you want to enter: ", 54);
                                 char enter_id[10];
                                 read(client, enter_id, 10);
-                                
+
                                 if (atoi(enter_id) > 0 && atoi(enter_id) <= maxid)
                                 {
                                     // TODO: update championships table and insert into entered table
