@@ -12,11 +12,11 @@
 
 //extern int errno;
 
-int main(int argc, char *argv[])
+int main()
 {
     int sd;                    // descriptorul de socket
     struct sockaddr_in server; // structura folosita pentru conectare
-    char msg[5000];             // mesajul trimis
+    char msg[5000];            // mesajul trimis
     char received[5000];
 
     // create socket
@@ -49,16 +49,23 @@ int main(int argc, char *argv[])
         bzero(msg, 5000);
         read(0, msg, 5000);
 
-        if (strncmp(msg, "exit", 4) == 0)
+        if (strcmp(msg, "exit\n") == 0)
         {
             write(sd, msg, 5000);
             return 1;
         }
 
-        if (write(sd, msg, strlen(msg) - 1) <= 0)
+        if (strcmp(msg, "\n") == 0)
         {
-            perror("[Client] Error on write() to the server.\n");
-            return errno;
+            write(sd, "!", 1);
+        }
+        else
+        {
+            if (write(sd, msg, strlen(msg) - 1) <= 0)
+            {
+                perror("[Client] Error on write() to the server.\n");
+                return errno;
+            }
         }
 
         bzero(msg, 5000);

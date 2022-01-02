@@ -1,15 +1,14 @@
-#include <iostream>
+#include "match_handler.h"
+#include "mail_handler.h"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <unistd.h>
 #include <errno.h>
-#include <stdio.h>
 #include <arpa/inet.h>
 #include <sqlite3.h>
-#include <string.h>
-#include <stdlib.h>
+#include <ctime>
 
 #define PORT 2728
 
@@ -50,7 +49,21 @@ static int callback2(void *ans, int argc, char **argv, char **azColName)
     for (int i = 0; i < argc; i++)
     {
         strcat(answer, argv[i]);
-        strcat(answer, ":");
+        strcat(answer, "\n");
+    }
+
+    return 0;
+}
+
+// sqlite3 callback for UPDATE operation
+static int callback3(void *ans, int argc, char **argv, char **azColName)
+{
+    char query[1000];
+
+    for (int i = 0; i < argc; i++)
+    {
+        strcat(query, argv[i]);
+        strcat(query, " ");
     }
 
     return 0;
@@ -60,13 +73,86 @@ static int callback2(void *ans, int argc, char **argv, char **azColName)
 int checkplayernum(char *str)
 {
     for (int i = 0; i < strlen(str); i++)
-    {
-        // printf("%c", str[i]);
         if (!isdigit(str[i]))
-        {
             return 1;
-        }
+
+    if (atoi(str) % 4 == 1 && atoi(str) <= 0)
+        return 1;
+
+    return 0;
+}
+
+// check if id is a valid number
+int check_id_number(char *str)
+{
+    for (int i = 0; i < strlen(str); i++)
+        if (!isdigit(str[i]))
+            return 1;
+
+    return 0;
+}
+
+// add days to given date from ctime
+void add_days(struct tm *date, int days_to_add)
+{
+    const time_t day = 86400; // number of seconds in a day
+    time_t date_in_seconds = mktime(date) + (day * days_to_add);
+
+    *date = *localtime(&date_in_seconds);
+}
+
+// calculate date for championship
+char *calculate_date()
+{
+    int possibilities[4] = {0, 15, 30, 45};
+
+    srand(time(NULL));
+
+    int option = rand() % 4;
+    struct tm date = {0, possibilities[option], rand() % (18 - 10 + 1) + 10};
+
+    time_t t = time(NULL);
+    struct tm now = *localtime(&t);
+
+    int year = now.tm_year + 1901;
+    int month = now.tm_mon + 1;
+    int day = now.tm_mday;
+
+    date.tm_year = year - 1900;
+    date.tm_mon = month - 13;
+    date.tm_mday = day;
+
+    int rand_days = rand() % (4 - 2 + 1) + 2;
+
+    add_days(&date, rand_days);
+
+    char *ans = asctime(&date);
+    ans[strlen(ans) - 1] = '\0';
+
+    return ans;
+}
+
+// check if entered date is formatted correctly
+int check_date(char *str)
+{
+    char *dd = strtok(str, ".");
+    if (strlen(dd) != 2 || check_id_number(dd) == 1)
+    {
+        return 1;
     }
+
+    char *mm = strtok(NULL, ".");
+    if (strlen(mm) != 2 || check_id_number(mm) == 1)
+    {
+        return 1;
+    }
+
+    char *yyyy = strtok(NULL, ".");
+    if (strlen(yyyy) != 4 || check_id_number(yyyy) == 1)
+    {
+        return 1;
+    }
+
     return 0;
 }
 
@@ -74,15 +160,15 @@ int main()
 {
     struct sockaddr_in server;
     struct sockaddr_in from;
-    fd_set readfds;
-    fd_set actfds;
+    //    fd_set readfds;
+    //    fd_set actfds;
     struct timeval tv;
     int sd, client;
     int optval = 1;
     socklen_t len = sizeof(from);
     char received[1000];
-    char toSend[1000];
-    char buffer[1000];
+    //    char toSend[1000];
+    //    char buffer[1000];
 
     // create socket
     if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -147,7 +233,7 @@ int main()
             sqlite3 *db;
             char *zErrMsg = 0;
             int rc;
-            char *sql;
+            //            char *sql;
             // open db
             rc = sqlite3_open("userinfo.db", &db);
 
@@ -208,7 +294,7 @@ int main()
                     if (!logged)
                     {
                         int uType;
-                        // set all strings to 0
+                        // set all strings to zeroes
                         bzero(sql_command, 4000);
                         bzero(user, 1000);
                         bzero(pass, 1000);
@@ -259,6 +345,7 @@ int main()
                             read(client, mail, 1000);
 
                             // create sql operation string
+                            bzero(sql_command, 4000);
                             sprintf(sql_command, "INSERT INTO USERINFO VALUES ('%s', '%s', '%s', %d, 0);", user, pass, mail, uType);
 
                             write(client, "[Server] Account created successfully.\n[Server] Enter command: ", 63);
@@ -317,9 +404,9 @@ int main()
 
                             if (strlen(result) > 1)
                             {
-                                char *typee = strtok(result, ":");
-                                typee = strtok(NULL, ":");
-                                typee = strtok(NULL, ":");
+                                char *typee = strtok(result, "\n");
+                                typee = strtok(NULL, "\n");
+                                typee = strtok(NULL, "\n");
                                 logged = 1;
                                 userType = atoi(typee);
                                 printf("[Server] User/pass combo correct.\n");
@@ -452,17 +539,17 @@ int main()
                             }
 
                             // set rules
-                            write(client, "[Server] Please choose an option for rules: \n\t1. single elimination\n\t2. double elimination\n[Server] Option: ", 108);
+                            write(client, "[Server] Please choose an option for rules: \n\t1. 1 V 1\n\t2. 2 V 2\n[Server] Option: ", 82);
                             bzero(rules, 1000);
                             read(client, rules, 1000);
 
                             if (strcmp(rules, "1") == 0)
                             {
-                                write(client, "[Server] Single elimination rule set.\n", 38);
+                                write(client, "[Server] 1 V 1 rule set.\n", 25);
                             }
                             else if (strcmp(rules, "2") == 0)
                             {
-                                write(client, "[Server] Double elimination rule set.\n", 38);
+                                write(client, "[Server] 2 V 2 rule set.\n", 25);
                             }
                             else
                             {
@@ -470,7 +557,7 @@ int main()
                             }
 
                             // set decider
-                            write(client, "[Server] Please choose an option for deciding matchups: \n\t1. Random\n\t2. Alphabetical\n\t3. By player score\n[Server] Option: ", 122);
+                            write(client, "[Server] Please choose an option for deciding matchups: \n\t1. Random\n\t2. Alphabetical\n[Server] Option: ", 102);
                             bzero(decider, 1000);
                             read(client, decider, 1000);
 
@@ -481,10 +568,6 @@ int main()
                             else if (strcmp(decider, "2") == 0)
                             {
                                 write(client, "[Server] Alphabetical decider rule set.\n[Server] Championship created successfully.\n[Server] Enter command: ", 108);
-                            }
-                            else if (strcmp(decider, "3") == 0)
-                            {
-                                write(client, "[Server] Player score decider rule set.\n[Server] Championship created successfully.\n[Server] Enter command: ", 108);
                             }
                             else
                             {
@@ -537,8 +620,6 @@ int main()
                         bzero(max_id, 4);
                         rc = sqlite3_exec(db, sql_command, callback2, max_id, &zErrMsg);
 
-                        int wants_to_enter = 0, quit = 0;
-
                         int maxid = atoi(max_id);
 
                         if (maxid >= 1)
@@ -554,21 +635,21 @@ int main()
                                 bzero(result, 4000);
                                 rc = sqlite3_exec(db, sql_command, callback2, result, &zErrMsg);
 
-                                champ_id = strtok(result, ":");
-                                game_name = strtok(NULL, ":");
-                                playercount = strtok(NULL, ":");
-                                rules = strtok(NULL, ":");
-                                decider = strtok(NULL, ":");
-                                playerentered = strtok(NULL, ":");
+                                champ_id = strtok(result, "\n");
+                                game_name = strtok(NULL, "\n");
+                                playercount = strtok(NULL, "\n");
+                                rules = strtok(NULL, "\n");
+                                decider = strtok(NULL, "\n");
+                                playerentered = strtok(NULL, "\n");
 
                                 char rule[100], decide[100];
                                 if (strcmp(rules, "1") == 0)
                                 {
-                                    strcpy(rule, "single elimination");
+                                    strcpy(rule, "1 V 1");
                                 }
                                 else
                                 {
-                                    strcpy(rule, "double elimination");
+                                    strcpy(rule, "2 V 2");
                                 }
 
                                 if (strcmp(decider, "1") == 0)
@@ -588,37 +669,238 @@ int main()
 
                                 id++;
                             }
-                            sprintf(championships + strlen(championships), "[Server] Enter command:\n\t1. Enter championship\n\t2. Exit menu\n[Server] Option: ");
+                            sprintf(championships + strlen(championships), "[Server] Enter command:");
                             write(client, championships, sizeof(championships));
-
-                            char ans[10];
-                            bzero(ans, 10);
-                            read(client, ans, 10);
-                            if (strcmp(ans, "1") == 0)
-                            {
-                                write(client, "[Server] Enter ID for championship you want to enter: ", 54);
-                                char enter_id[10];
-                                read(client, enter_id, 10);
-
-                                if (atoi(enter_id) > 0 && atoi(enter_id) <= maxid)
-                                {
-                                    // TODO: update championships table and insert into entered table
-                                    write(client, "[Server] Request for championship sent successfully. Check e-mail to check if you've been accepted.\n[Server] Enter command: ", 124);
-                                }
-                                else
-                                {
-                                    write(client, "[Server] Championship ID does not exist. Operation will not continue.\n[Server] Enter command: ", 94);
-                                }
-                            }
-                            else
-                            {
-                                write(client, "[Server] Operation exited.\n[Server] Enter command: ", 51);
-                            }
                         }
                         else
                         {
                             write(client, "[Server] No championships to show.\n[Server] Enter command: ", 59);
                         }
+                    }
+                }
+                else if (strcmp(received, "enter-championship") == 0)
+                {
+                    if (!logged)
+                    {
+                        printf("[Server] User tried viewing championships while not being logged in.\n");
+                        fflush(stdout);
+                        write(client, "[Server] You are not logged in. Command unavailable.\n[Server] Enter command: ", 77);
+                    }
+                    else
+                    {
+                        printf("[Server] User wants to enter championship. Sending prompts...\n");
+                        fflush(stdout);
+                        write(client, "[Server] Please enter ID for championship you want to enter: ", 61);
+
+                        char ans[10];
+                        bzero(ans, 10);
+                        read(client, ans, 10);
+
+                        char max_id[4];
+                        bzero(sql_command, 4000);
+                        sprintf(sql_command, "SELECT MAX(ID) FROM CHAMPIONSHIPS;");
+
+                        bzero(max_id, 4);
+                        sqlite3_exec(db, sql_command, callback2, max_id, &zErrMsg);
+
+                        if (check_id_number(ans) == 1)
+                        {
+                            write(client, "[Server] ID is not a number. Operation will not continue.\n[Server] Enter command: ", 82);
+                        }
+                        else
+                        {
+                            if (atoi(ans) <= 0 || atoi(ans) > atoi(max_id))
+                            {
+                                write(client, "[Server] No championship with this ID. Operation will not continue.\n[Server] Enter command: ", 92);
+                            }
+                            else
+                            {
+                                char result[1000];
+
+                                bzero(sql_command, 4000);
+                                sprintf(sql_command, "SELECT USERNAME, CHAMPID FROM SIGNEDUP WHERE CHAMPID=%s AND USERNAME='%s';", ans, user);
+                                bzero(result, 1000);
+                                sqlite3_exec(db, sql_command, callback2, result, &zErrMsg);
+
+                                printf("check if user entetred: %s\n", result);
+
+                                if (strlen(result) > 1)
+                                {
+                                    write(client, "[Server] Already entered this championship. Operation will not execute.\n[Server] Enter command: ", 96);
+                                }
+                                else
+                                {
+
+                                    bzero(sql_command, 4000);
+                                    sprintf(sql_command, "SELECT PLAYERNUM, ENTERED FROM CHAMPIONSHIPS WHERE ID=%s;", ans);
+                                    bzero(result, 1000);
+                                    sqlite3_exec(db, sql_command, callback2, result, &zErrMsg);
+
+                                    char *playernum, *entered;
+
+                                    playernum = strtok(result, "\n");
+                                    entered = strtok(NULL, "\n");
+
+                                    if (atoi(entered) >= atoi(playernum))
+                                    {
+                                        char email_addr[1000];
+                                        bzero(sql_command, 4000);
+                                        sprintf(sql_command, "SELECT MAIL FROM USERINFO WHERE USERNAME='%s';", user);
+                                        bzero(email_addr, 1000);
+                                        sqlite3_exec(db, sql_command, callback2, email_addr, &zErrMsg);
+
+                                        send_mail_declined(user, email_addr, ans);
+                                    }
+                                    else
+                                    {
+                                        bzero(sql_command, 4000);
+                                        sprintf(sql_command, "INSERT INTO SIGNEDUP VALUES ('%s', %s)", user, ans);
+                                        sqlite3_exec(db, sql_command, callback1, 0, &zErrMsg);
+
+                                        bzero(sql_command, 4000);
+                                        sprintf(sql_command, "UPDATE CHAMPIONSHIPS SET ENTERED = ENTERED + 1 WHERE ID = '%s';", ans);
+                                        sqlite3_exec(db, sql_command, callback3, 0, &zErrMsg);
+
+                                        bzero(sql_command, 4000);
+                                        sprintf(sql_command, "SELECT RULE, DECIDER, ENTERED, PLAYERNUM FROM CHAMPIONSHIPS WHERE ID='%s';", ans);
+                                        bzero(result, 1000);
+                                        sqlite3_exec(db, sql_command, callback2, result, &zErrMsg);
+
+                                        char *rule, *decider, *players_entered, *total_players;
+
+                                        rule = strtok(result, "\n");
+                                        decider = strtok(NULL, "\n");
+                                        players_entered = strtok(NULL, "\n");
+                                        total_players = strtok(NULL, "\n");
+
+                                        int is_playernum_ok = 1;
+                                        if (atoi(players_entered) == atoi(total_players))
+                                            is_playernum_ok = 0;
+
+                                        if (is_playernum_ok == 0)
+                                        {
+                                            char emails[4000];
+                                            if (strcmp(decider, "1") == 0)
+                                            {
+                                                bzero(sql_command, 4000);
+                                                sprintf(sql_command, "SELECT USERNAME FROM SIGNEDUP WHERE CHAMPID='%s' ORDER BY USERNAME;", ans);
+                                                bzero(result, 1000);
+                                                sqlite3_exec(db, sql_command, callback2, result, &zErrMsg);
+                                            }
+                                            else if (strcmp(decider, "2") == 0)
+                                            {
+                                                bzero(sql_command, 4000);
+                                                sprintf(sql_command, "SELECT USERNAME FROM SIGNEDUP WHERE CHAMPID='%s' ORDER BY RANDOM();", ans);
+                                                bzero(result, 1000);
+                                                sqlite3_exec(db, sql_command, callback2, result, &zErrMsg);
+                                            }
+
+                                            if (strcmp(rule, "1") == 0)
+                                            {
+                                                char *token = strtok(result, "\n");
+                                                while (token != NULL)
+                                                {
+                                                    char *first_user = token;
+                                                    char *second_user = strtok(NULL, "\n");
+
+                                                    printf("%s - %s\n", first_user, second_user);
+
+                                                    // char* date = calculate_date();
+                                                    bzero(sql_command, 4000);
+                                                    sprintf(sql_command, "SELECT EMAIL FROM USERINFO WHERE NAME='%s' OR NAME='%s';", first_user, second_user);
+                                                    bzero(emails, 4000);
+                                                    sqlite3_exec(db, sql_command, callback2, emails, &zErrMsg);
+
+                                                    char *first_mail = strtok(emails, "\n");
+                                                    char *second_mail = strtok(NULL, "\n");
+                                                    char *date = calculate_date();
+
+                                                    send_mail_1v1(first_user, second_user, date, first_mail, second_mail, ans);
+                                                    send_mail_1v1(second_user, first_user, date, second_mail, first_mail, ans);
+
+                                                    token = strtok(NULL, "\n");
+                                                }
+                                            }
+                                            else if (strcmp(rule, "2") == 0)
+                                            {
+                                                char *token = strtok(result, "\n");
+                                                while (token != NULL)
+                                                {
+                                                    char *first_user = token;
+                                                    char *second_user = strtok(NULL, "\n");
+                                                    char *third_user = strtok(NULL, "\n");
+                                                    char *fourth_user = strtok(NULL, "\n");
+
+                                                    printf("%s, %s vs. %s, %s\n", first_user, second_user, third_user, fourth_user);
+
+                                                    // char* date = calculate_date();
+                                                    bzero(sql_command, 4000);
+                                                    sprintf(sql_command, "SELECT EMAIL FROM USERINFO WHERE NAME='%s' OR NAME='%s' OR NAME='%s' OR NAME='%s';", first_user, second_user, third_user, fourth_user);
+                                                    bzero(emails, 4000);
+                                                    sqlite3_exec(db, sql_command, callback2, emails, &zErrMsg);
+
+                                                    char *first_mail = strtok(emails, "\n");
+                                                    char *second_mail = strtok(NULL, "\n");
+                                                    char *third_mail = strtok(NULL, "\n");
+                                                    char *fourth_mail = strtok(NULL, "\n");
+                                                    char *date = calculate_date();
+
+                                                    send_mail_2v2(first_user, second_user, third_user, fourth_user, first_mail, date, ans);
+                                                    send_mail_2v2(second_user, first_user, third_user, fourth_user, second_mail, date, ans);
+                                                    send_mail_2v2(third_user, fourth_user, first_user, second_user, third_mail, date, ans);
+                                                    send_mail_2v2(fourth_user, third_user, first_user, second_user, fourth_mail, date, ans);
+
+                                                    token = strtok(NULL, "\n");
+                                                }
+                                            }
+                                        }
+                                    }
+                                    write(client, "[Server] Request for entering championship sent. You will receive an e-mail at %s with further information.\n[Server] Enter command: ", 132);
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (strcmp(received, "change-date") == 0)
+                {
+                    write(client, "[Server] Enter ID for championship you want to reschedule: ", 59);
+                    char ans[10];
+                    char result[1000];
+                    bzero(ans, 10);
+                    read(client, ans, 10);
+
+                    if (check_id_number(ans) == 0)
+                    {
+                        bzero(sql_command, 4000);
+                        sprintf(sql_command, "SELECT CHAMPID FROM SIGNEDUP WHERE USERNAME='%s' AND CHAMPID='%s';", user, ans);
+                        bzero(result, 1000);
+                        sqlite3_exec(db, sql_command, callback2, result, &zErrMsg);
+
+                        if (strlen(result) > 1)
+                        {
+                            write(client, "[Server] Please enter date you would like to reschedule to (format as dd.mm.yyyy): ", 83);
+                            char date_candidate[100];
+
+                            bzero(date_candidate, 100);
+                            read(client, date_candidate, 100);
+
+                            if (check_date(date_candidate) == 0)
+                            {
+                                write(client, "[Server] Championship rescheduled to your new selected date.\n[Server] Enter command: ", 85);
+                            }
+                            else
+                            {
+                                write(client, "[Server] Incorrect date format. Operation will not continue.\n[Server] Enter command: ", 85);
+                            }
+                        }
+                        else
+                        {
+                            write(client, "[Server] You have not entered this championship. Operation will not continue.\n[Server] Enter command: ", 102);
+                        }
+                    }
+                    else
+                    {
+                        write(client, "[Server] Invalid ID. Operation will not continue.\n[Server] Enter command: ", 74);
                     }
                 }
                 else
