@@ -12,6 +12,14 @@
 #include <string>
 #include <regex>
 
+#define RED "\e[1;31m"
+#define GREEN "\e[1;32m"
+#define YELLOW "\e[1;33m"
+#define BLUE "\e[1;34m"
+#define MAGENTA "\e[1;35m"
+#define CYAN "\e[1;36m"
+#define RESET "\x1b[0m"
+
 #define PORT 2728
 
 // sqlite3 callback for SELECT operation
@@ -256,7 +264,7 @@ int main()
             char sql_command[4000], user[1000], pass[1000], mail[1000], type[1000];
             close(sd);
 
-            if (write(client, "[Server] Enter 'help' for a list of commands or enter command: ", strlen("[Server] Enter 'help' for a list of commands or enter command: ") - 1) <= 0)
+            if (write(client, CYAN "[Server] " BLUE "Enter " YELLOW "help" BLUE " for a list of commands or enter command: " RESET, 93) <= 0)
             {
                 perror("[Server] Error on write() to client.\n");
                 exit(0);
@@ -297,17 +305,17 @@ int main()
                 {
                     if (!logged)
                     {
-                        write(client, "[Server] Available commands:\n\t1. help\n\t2. login\n\t3. register\n\t4. exit\n[Server] Enter command: ", 94);
+                        write(client, CYAN "[Server] " BLUE "Available commands:\n\t" BLUE "1. " YELLOW "help\n\t" BLUE "2. " YELLOW "login\n\t" BLUE "3. " YELLOW "register\n\t" BLUE "4. " YELLOW "exit\n" CYAN "[Server] " BLUE "Enter command: " RESET, 182);
                     }
 
                     if (logged && userType == 0)
                     {
-                        write(client, "[Server] Available commands:\n\t1. help\n\t2. create-championship\n\t3. view-championships\n\t4. enter-championship\n\t5. change-date\n\t6. add-admin\n\t7. logout\n\t8. exit\n[Server] Enter command: ", 182);
+                        write(client, CYAN "[Server] " BLUE "Available commands:\n\t" BLUE "1. " YELLOW "help\n\t" BLUE "2. " YELLOW "create-championship\n\t" BLUE "3. " YELLOW "view-championships\n\t" BLUE "4. " YELLOW "enter-championship\n\t" BLUE "5. " YELLOW "change-date\n\t" BLUE "6. " YELLOW "add-admin\n\t" BLUE "7. " YELLOW "logout\n\t" BLUE "8. " YELLOW "exit\n" CYAN "[Server] " BLUE "Enter command: " RESET, 326);
                     }
 
                     if (logged && userType == 1)
                     {
-                        write(client, "[Server] Available commands:\n\t1. help\n\t2. view-championships\n\t3. enter-championship\n\t4. change-date\n\t5. logout\n\t6. exit\n[Server] Enter command: ", 144);
+                        write(client, CYAN "[Server] " BLUE "Available commands:\n\t" BLUE "1. " YELLOW "help\n\t" BLUE "2. " YELLOW "view-championships\n\t" BLUE "3. " YELLOW "enter-championship\n\t" BLUE "4. " YELLOW "change-date\n\t" BLUE "5. " YELLOW "logout\n\t" BLUE "6. " YELLOW "exit\n" CYAN "[Server] " BLUE "Enter command: " RESET, 260);
                     }
                 }
                 else if (strcmp(received, "register") == 0)
@@ -324,7 +332,7 @@ int main()
 
                         printf("[Server] Client requested register. Sending username request...\n");
                         fflush(stdout);
-                        write(client, "[Server] Please provide a username: ", 36);
+                        write(client, CYAN "[Server]" BLUE " Please provide a username: " RESET, 54);
                         read(client, user, 1000);
 
                         // check if user already exists
@@ -337,11 +345,11 @@ int main()
 
                         if (strlen(result) > 1)
                         {
-                            write(client, "[Server] User already exists! Try logging in.\n[Server] Enter command: ", 70);
+                            write(client, RED "[Server] " RED "User already exists! Try logging in.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 102);
                         }
                         else if (check_username(user) == false)
                         {
-                            write(client, "[Server] Username cannot contain special characters! Operation will not continue.\n[Server] Enter command: ", 106);
+                            write(client, RED "[Server] " RED "Username cannot contain special characters! Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 138);
                         }
                         else
                         {
@@ -364,16 +372,16 @@ int main()
 
                             fclose(fp);
 
-                            write(client, "[Server] Please provide a password: ", 36);
+                            write(client, CYAN "[Server] " BLUE "Please provide a password: " RESET, 54);
                             read(client, pass, 1000);
-                            write(client, "[Server] Please provide your email address: ", 44);
+                            write(client, CYAN "[Server] " BLUE "Please provide your email address: " RESET, 62);
                             read(client, mail, 1000);
 
                             // create sql operation string
                             bzero(sql_command, 4000);
                             sprintf(sql_command, "INSERT INTO USERINFO VALUES ('%s', '%s', '%s', %d, 0);", user, pass, mail, uType);
 
-                            write(client, "[Server] Account created successfully.\n[Server] Enter 'help' for a list of commands or enter command: ", 102);
+                            write(client, CYAN "[Server] " BLUE "Account created successfully.\n" CYAN "[Server] " BLUE "Enter " YELLOW "help" BLUE " for a list of commands or enter command: " RESET, 146);
                             rc = sqlite3_exec(db, sql_command, NULL, 0, &zErrMsg);
 
                             if (rc != SQLITE_OK)
@@ -393,7 +401,7 @@ int main()
                     {
                         printf("[Server] User entered 'register' while logged in.\n");
                         fflush(stdout);
-                        write(client, "[Server] Log out to use this command.\n[Server] Enter command: ", 63);
+                        write(client, RED "[Server] Log out to use this command.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 87);
                     }
                 }
                 else if (strcmp(received, "login") == 0)
@@ -404,7 +412,7 @@ int main()
                         printf("[Server] User requested login. Sending user and pass prompt...\n");
                         fflush(stdout);
 
-                        write(client, "[Server] Enter your username: ", 30);
+                        write(client, CYAN "[Server] " BLUE "Enter your username: " RESET, 48);
                         bzero(user, 1000);
                         read(client, user, 1000);
 
@@ -417,7 +425,7 @@ int main()
                         {
                             printf("[Server] username exists. Sending pass prompt...\n");
                             fflush(stdout);
-                            write(client, "[Server] Enter your password: ", 30);
+                            write(client, CYAN "[Server]" BLUE " Enter your password: " RESET, 48);
 
                             bzero(pass, 1000);
                             read(client, pass, 1000);
@@ -437,27 +445,27 @@ int main()
                                 printf("[Server] User/pass combo correct.\n");
                                 fflush(stdout);
 
-                                write(client, "[Server] Logged in successfully.\n[Server] Enter 'help' for a list of commands or enter command: ", 96);
+                                write(client, CYAN "[Server] " GREEN "Logged in successfully.\n" CYAN "[Server] " BLUE "Enter " YELLOW "help" BLUE " for a list of commands or enter command: " RESET, 140);
                             }
                             else
                             {
                                 printf("[Server] Wrong login info.\n");
                                 fflush(stdout);
-                                write(client, "[Server] Wrong user/pass combination.\n[Server] Enter command: ", 62);
+                                write(client, RED "[Server] Wrong user/pass combination.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 87);
                             }
                         }
                         else
                         {
                             printf("[Server] Username does not exist.\n");
                             fflush(stdout);
-                            write(client, "[Server] Username does not exist. Operation will not continue.\n[Server] Enter command: ", 87);
+                            write(client, RED "[Server] Username does not exist. Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 112);
                         }
                     }
                     else
                     {
                         printf("[Server] User entered 'login' while logged in.\n");
                         fflush(stdout);
-                        write(client, "[Server] Log out to use this command.\n[Server] Enter command: ", 63);
+                        write(client, RED "[Server] Log out to use this command.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 87);
                     }
                 }
                 else if (strcmp(received, "logout") == 0)
@@ -466,7 +474,7 @@ int main()
                     {
                         printf("[Server] User tried logging out while not being logged in.\n");
                         fflush(stdout);
-                        write(client, "[Server] You are not logged in. Command unavailable.\n[Server] Enter command: ", 77);
+                        write(client, RED "[Server] You are not logged in. Command unavailable.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 102);
                     }
                     else
                     {
@@ -475,7 +483,7 @@ int main()
 
                         printf("[Server] User logged out.\n");
                         fflush(stdout);
-                        write(client, "[Server] Logged out successfully.\n[Server] Enter command: ", 58);
+                        write(client, CYAN "[Server] " GREEN "Logged out successfully.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 90);
                     }
                 }
                 else if (strcmp(received, "add-admin") == 0)
@@ -484,11 +492,11 @@ int main()
                     {
                         printf("[Server] User tried adding admin while not being logged in.\n");
                         fflush(stdout);
-                        write(client, "[Server] You are not logged in. Command unavailable.\n[Server] Enter command: ", 77);
+                        write(client, RED "[Server] You are not logged in. Command unavailable.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 102);
                     }
                     else
                     {
-                        write(client, "[Server] Provide username to add to whitelist: ", 47);
+                        write(client, CYAN "[Server] " BLUE "Provide username to add to whitelist: " RESET, 65);
 
                         char user_to_add[1000];
                         bzero(user_to_add, 1000);
@@ -515,7 +523,7 @@ int main()
 
                         if (flag == 1)
                         {
-                            write(client, "[Server] Username already whitelisted.\n[Server] Enter command: ", 63);
+                            write(client, RED "[Server] Username already whitelisted.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 88);
                         }
                         else
                         {
@@ -526,7 +534,7 @@ int main()
 
                             fclose(fp);
 
-                            write(client, "[Server] Added username to whitelist successfully.\n[Server] Enter command: ", 75);
+                            write(client, CYAN "[Server] " GREEN "Added username to whitelist successfully.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 107);
                         }
                     }
                 }
@@ -536,7 +544,7 @@ int main()
                     {
                         printf("[Server] User tried creating championship while not being logged in.\n");
                         fflush(stdout);
-                        write(client, "[Server] You are not logged in. Command unavailable.\n[Server] Enter command: ", 77);
+                        write(client, RED "[Server] You are not logged in. Command unavailable.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 102);
                     }
                     else
                     {
@@ -547,12 +555,12 @@ int main()
                             fflush(stdout);
 
                             // specify game
-                            write(client, "[Server] Please enter game name for championship: ", 50);
+                            write(client, CYAN "[Server] " BLUE "Please enter game name for championship: " RESET, 68);
                             bzero(game_name, 1000);
                             read(client, game_name, 1000);
 
                             // set rules
-                            write(client, "[Server] Please choose an option for rules: \n\t1. 1 V 1\n\t2. 2 V 2\n[Server] Option: ", 82);
+                            write(client, CYAN "[Server] " BLUE "Please choose an option for rules: \n\t1. " YELLOW "1 V 1\n\t" BLUE "2. " YELLOW "2 V 2\n" CYAN "[Server] " BLUE "Option: " RESET, 135);
                             bzero(rules, 1000);
                             read(client, rules, 1000);
 
@@ -561,12 +569,12 @@ int main()
                             if (strcmp(rules, "1") == 0)
                             {
                                 flag_rules = 1;
-                                write(client, "[Server] 1 V 1 rule set.\n", 25);
+                                write(client, CYAN "[Server]" GREEN " 1 V 1 rule set.\n" RESET, 43);
                             }
                             else if (strcmp(rules, "2") == 0)
                             {
                                 flag_rules = 1;
-                                write(client, "[Server] 2 V 2 rule set.\n", 25);
+                                write(client, CYAN "[Server] " GREEN "2 V 2 rule set.\n" RESET, 43);
                             }
                             else
                             {
@@ -574,7 +582,7 @@ int main()
                             }
 
                             // set decider
-                            write(client, "[Server] Please choose an option for deciding matchups: \n\t1. Random\n\t2. Alphabetical\n[Server] Option: ", 102);
+                            write(client, CYAN "[Server] " BLUE "Please choose an option for deciding matchups: \n\t1. " YELLOW "Random\n\t" BLUE "2. " YELLOW "Alphabetical\n" CYAN "[Server] " BLUE "Option: " RESET, 155);
                             bzero(decider, 1000);
                             read(client, decider, 1000);
 
@@ -583,12 +591,12 @@ int main()
                             if (strcmp(decider, "1") == 0)
                             {
                                 flag_decider = 0;
-                                write(client, "[Server] Random decider rule set.\n", 34);
+                                write(client, CYAN "[Server] " BLUE "Random decider rule set.\n" RESET, 53);
                             }
                             else if (strcmp(decider, "2") == 0)
                             {
                                 flag_decider = 0;
-                                write(client, "[Server] Alphabetical decider rule set.\n", 40);
+                                write(client, CYAN "[Server] " BLUE "Alphabetical decider rule set.\n" RESET, 58);
                             }
                             else
                             {
@@ -596,11 +604,11 @@ int main()
                             }
 
                             // set player number
-                            write(client, "[Server] Please enter player number: ", 37);
+                            write(client, CYAN "[Server] " BLUE "Please enter player number: " RESET, 55);
                             bzero(playernum, 1000);
                             read(client, playernum, 1000);
 
-                            write(client, "[Server] Player number set. Trying to create championship...\n", 61);
+                            write(client, CYAN "[Server] " GREEN "Player number set. " BLUE "Trying to create championship...\n" RESET, 86);
 
                             if ((atoi(decider) == 1 || atoi(decider) == 2) && (atoi(rules) == 1 || atoi(rules) == 2) && checkplayernum(playernum, atoi(decider) == 0))
                             {
@@ -610,14 +618,14 @@ int main()
                             }
                             else
                             {
-                                write(client, "[Server] Wrong inputs. Championship not created.\n[Server] Enter command: ", 73);
+                                write(client, RED "[Server] Wrong inputs. Championship not created.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 98);
                             }
                         }
                         else
                         {
                             printf("[Server] Regular user tried using admin command.\n");
                             fflush(stdout);
-                            write(client, "[Server] You do not have the permission to use this command.\n[Server] Enter command: ", 85);
+                            write(client, RED "[Server] You do not have the permission to use this command.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 110);
                         }
                     }
                 }
@@ -627,7 +635,7 @@ int main()
                     {
                         printf("[Server] User tried viewing championships while not being logged in.\n");
                         fflush(stdout);
-                        write(client, "[Server] You are not logged in. Command unavailable.\n[Server] Enter command: ", 77);
+                        write(client, RED "[Server] You are not logged in. Command unavailable.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 102);
                     }
                     else
                     {
@@ -687,16 +695,16 @@ int main()
                                     strcpy(decide, "Point based system");
                                 }
 
-                                sprintf(championships + strlen(championships), "%s\t%s\t%s\t\t%s\t\t%s\t\t%s\n", champ_id, game_name, playercount, rule, decide, playerentered);
+                                sprintf(championships + strlen(championships), BLUE "%s\t" YELLOW "%s\t%s\t\t%s\t\t%s\t\t%s\n" RESET, champ_id, game_name, playercount, rule, decide, playerentered);
 
                                 id++;
                             }
-                            sprintf(championships + strlen(championships), "[Server] Enter command:");
+                            sprintf(championships + strlen(championships), CYAN "[Server] " BLUE "Enter command:");
                             write(client, championships, sizeof(championships));
                         }
                         else
                         {
-                            write(client, "[Server] No championships to show.\n[Server] Enter command: ", 59);
+                            write(client, MAGENTA "[Server] No championships to show.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 84);
                         }
                     }
                 }
@@ -706,13 +714,13 @@ int main()
                     {
                         printf("[Server] User tried viewing championships while not being logged in.\n");
                         fflush(stdout);
-                        write(client, "[Server] You are not logged in. Command unavailable.\n[Server] Enter command: ", 77);
+                        write(client, RED "[Server] You are not logged in. Command unavailable.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 102);
                     }
                     else
                     {
                         printf("[Server] User wants to enter championship. Sending prompts...\n");
                         fflush(stdout);
-                        write(client, "[Server] Please enter ID for championship you want to enter: ", 61);
+                        write(client, CYAN "[Server] " BLUE "Please enter ID for championship you want to enter: " RESET, 79);
 
                         char ans[10];
                         bzero(ans, 10);
@@ -727,13 +735,13 @@ int main()
 
                         if (check_id_number(ans) == 1)
                         {
-                            write(client, "[Server] ID is not a number. Operation will not continue.\n[Server] Enter command: ", 82);
+                            write(client, RED "[Server] ID is not a number. Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 107);
                         }
                         else
                         {
                             if (atoi(ans) <= 0 || atoi(ans) > atoi(max_id))
                             {
-                                write(client, "[Server] No championship with this ID. Operation will not continue.\n[Server] Enter command: ", 92);
+                                write(client, RED "[Server] No championship with this ID. Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 117);
                             }
                             else
                             {
@@ -746,10 +754,11 @@ int main()
 
                                 if (strlen(result) > 1)
                                 {
-                                    write(client, "[Server] Already entered this championship. Operation will not execute.\n[Server] Enter command: ", 96);
+                                    write(client, RED "[Server] Already entered this championship. Operation will not execute.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 121);
                                 }
                                 else
                                 {
+                                    printf("Player split select: %s\n", result);
 
                                     bzero(sql_command, 4000);
                                     sprintf(sql_command, "SELECT PLAYERNUM, ENTERED FROM CHAMPIONSHIPS WHERE ID=%s;", ans);
@@ -780,134 +789,57 @@ int main()
                                         bzero(sql_command, 4000);
                                         sprintf(sql_command, "UPDATE CHAMPIONSHIPS SET ENTERED = ENTERED + 1 WHERE ID = '%s';", ans);
                                         sqlite3_exec(db, sql_command, NULL, NULL, &zErrMsg);
+                                    }
 
+                                    bzero(sql_command, 4000);
+                                    sprintf(sql_command, "SELECT RULE, DECIDER, ENTERED, PLAYERNUM FROM CHAMPIONSHIPS WHERE ID='%s';", ans);
+                                    bzero(result, 1000);
+                                    sqlite3_exec(db, sql_command, callback1, result, &zErrMsg);
+
+                                    char *rule, *decider, *players_entered, *total_players;
+
+                                    rule = strtok(result, "\n");
+                                    int regula = atoi(rule);
+                                    decider = strtok(NULL, "\n");
+                                    players_entered = strtok(NULL, "\n");
+                                    total_players = strtok(NULL, "\n");
+
+                                    int is_playernum_ok = 1;
+                                    if (atoi(players_entered) == atoi(total_players))
+                                        is_playernum_ok = 0;
+
+                                    if (is_playernum_ok == 0)
+                                    {
+                                        char players[4000];
+                                        bzero(players, 4000);
                                         bzero(sql_command, 4000);
-                                        sprintf(sql_command, "SELECT RULE, DECIDER, ENTERED, PLAYERNUM FROM CHAMPIONSHIPS WHERE ID='%s';", ans);
-                                        bzero(result, 1000);
-                                        sqlite3_exec(db, sql_command, callback1, result, &zErrMsg);
 
-                                        char *rule, *decider, *players_entered, *total_players;
-
-                                        rule = strtok(result, "\n");
-                                        int regula = atoi(rule);
-                                        decider = strtok(NULL, "\n");
-                                        players_entered = strtok(NULL, "\n");
-                                        total_players = strtok(NULL, "\n");
-
-                                        int is_playernum_ok = 1;
-                                        if (atoi(players_entered) == atoi(total_players))
-                                            is_playernum_ok = 0;
-
-                                        if (is_playernum_ok == 0)
+                                        if (regula == 1)
                                         {
-                                            char check_res[1000];
-                                            bzero(sql_command, 4000);
-                                            sprintf(sql_command, "SELECT USERNAME FROM SIGNEDUP WHERE CHAMPID='%s';", ans);
-                                            bzero(check_res, 1000);
-                                            sqlite3_exec(db, sql_command, callback1, check_res, &zErrMsg);
-
-                                            while (strlen(check_res) > 1)
+                                            if (strcmp(decider, "1") == 0)
                                             {
-                                                char emails[4000];
-                                                if (strcmp(decider, "1") == 0)
+                                                sprintf(sql_command, "SELECT USERNAME FROM SIGNEDUP WHERE CHAMPID='%s' ORDER BY USERNAME;", ans);
+                                                sqlite3_exec(db, sql_command, callback1, players, &zErrMsg);
+
+                                                char* token = strtok(players, "");
+
+                                                while (token != NULL)
                                                 {
-                                                    bzero(sql_command, 4000);
-                                                    sprintf(sql_command, "SELECT USERNAME FROM SIGNEDUP WHERE CHAMPID='%s' ORDER BY USERNAME;", ans);
-                                                    bzero(result, 1000);
-                                                    sqlite3_exec(db, sql_command, callback1, result, &zErrMsg);
+                                                    token = strtok(NULL, "\n");
+                                                    char* first_player;
+                                                    strcpy(first_player, token);
+
+                                                    token = strtok(NULL, "\n");
+                                                    char* second_player;
+                                                    strcpy(second_player, token);
+
+                                                    printf("%s - %s\n", first_player, second_player);
                                                 }
-                                                else if (strcmp(decider, "2") == 0)
-                                                {
-                                                    bzero(sql_command, 4000);
-                                                    sprintf(sql_command, "SELECT USERNAME FROM SIGNEDUP WHERE CHAMPID='%s' ORDER BY RANDOM();", ans);
-                                                    bzero(result, 1000);
-                                                    sqlite3_exec(db, sql_command, callback1, result, &zErrMsg);
-                                                }
-
-                                                if (regula == 1)
-                                                {
-                                                    printf("am ajuns pe regula 1\n");
-                                                    char *token = strtok(result, "\n");
-                                                    while (token != NULL)
-                                                    {
-                                                        char *first_user = token;
-                                                        char *second_user = strtok(NULL, "\n");
-
-                                                        printf("%s - %s\n", first_user, second_user);
-
-                                                        bzero(sql_command, 4000);
-                                                        sprintf(sql_command, "SELECT EMAIL FROM USERINFO WHERE NAME='%s' OR NAME='%s';", first_user, second_user);
-                                                        bzero(emails, 4000);
-                                                        sqlite3_exec(db, sql_command, callback1, emails, &zErrMsg);
-
-                                                        char *first_mail = strtok(emails, "\n");
-                                                        char *second_mail = strtok(NULL, "\n");
-                                                        char *date = calculate_date();
-
-                                                        bzero(sql_command, 4000);
-                                                        sprintf(sql_command, "UPDATE SIGNEDUP SET GAMEDATE='%s' WHERE CHAMPID='%s' AND (USERNAME='%s' OR USERNAME='%s');", date, first_user, second_user);
-                                                        sqlite3_exec(db, sql_command, NULL, NULL, &zErrMsg);
-
-                                                        printf("am ajuns aici inainte de mail\n");
-                                                        printf("jucatorii sunt: %s si %s", first_user, second_user);
-                                                        // send_mail_1v1(first_user, second_user, date, first_mail, second_mail, ans);
-                                                        // send_mail_1v1(second_user, first_user, date, second_mail, first_mail, ans);
-
-                                                        play_match_1v1(first_user, second_user, ans, date);
-
-                                                        token = strtok(NULL, "\n");
-                                                    }
-                                                }
-                                                else if (regula == 2)
-                                                {
-                                                    char *token = strtok(result, "\n");
-                                                    while (token != NULL)
-                                                    {
-                                                        char *first_user = token;
-                                                        char *second_user = strtok(NULL, "\n");
-                                                        char *third_user = strtok(NULL, "\n");
-                                                        char *fourth_user = strtok(NULL, "\n");
-
-                                                        printf("%s, %s vs. %s, %s\n", first_user, second_user, third_user, fourth_user);
-
-                                                        bzero(sql_command, 4000);
-                                                        sprintf(sql_command, "SELECT EMAIL FROM USERINFO WHERE NAME='%s' OR NAME='%s' OR NAME='%s' OR NAME='%s';", first_user, second_user, third_user, fourth_user);
-                                                        bzero(emails, 4000);
-                                                        sqlite3_exec(db, sql_command, callback1, emails, &zErrMsg);
-
-                                                        char *first_mail = strtok(emails, "\n");
-                                                        char *second_mail = strtok(NULL, "\n");
-                                                        char *third_mail = strtok(NULL, "\n");
-                                                        char *fourth_mail = strtok(NULL, "\n");
-                                                        char *date = calculate_date();
-
-                                                        bzero(sql_command, 4000);
-                                                        sprintf(sql_command, "UPDATE SIGNEDUP SET GAMEDATE='%s' WHERE CHAMPID='%s' AND (USERNAME='%s' OR USERNAME='%s' OR USERNAME='%s' OR USERNAME='%s');", date, first_user, second_user, third_user, fourth_user);
-                                                        sqlite3_exec(db, sql_command, NULL, NULL, &zErrMsg);
-
-                                                        // send_mail_2v2(first_user, second_user, third_user, fourth_user, first_mail, date, ans);
-                                                        // send_mail_2v2(second_user, first_user, third_user, fourth_user, second_mail, date, ans);
-                                                        // send_mail_2v2(third_user, fourth_user, first_user, second_user, third_mail, date, ans);
-                                                        // send_mail_2v2(fourth_user, third_user, first_user, second_user, fourth_mail, date, ans);
-
-                                                        play_match_2v2(first_user, second_user, third_user, fourth_user, ans, date);
-
-                                                        token = strtok(NULL, "\n");
-                                                    }
-                                                }
-
-                                                bzero(sql_command, 4000);
-                                                sprintf(sql_command, "SELECT USERNAME FROM SIGNEDUP WHERE CHAMPID='%s';", ans);
-                                                bzero(check_res, 1000);
-                                                sqlite3_exec(db, sql_command, callback1, check_res, &zErrMsg);
                                             }
-
-                                            bzero(sql_command, 4000);
-                                            sprintf(sql_command, "DELETE FROM CHAMPIONSHIPS WHERE ID='%s';", ans);
-                                            sqlite3_exec(db, sql_command, NULL, NULL, &zErrMsg);
                                         }
                                     }
-                                    write(client, "[Server] Request for entering championship sent. You will receive an e-mail at %s with further information.\n[Server] Enter command: ", 132);
+
+                                    write(client, CYAN "[Server] " GREEN "Request for entering championship sent. You will receive an e-mail at " YELLOW "%s" BLUE " with further information.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 178);
                                 }
                             }
                         }
@@ -915,7 +847,7 @@ int main()
                 }
                 else if (strcmp(received, "change-date") == 0)
                 {
-                    write(client, "[Server] Enter ID for championship you want to reschedule: ", 59);
+                    write(client, CYAN "[Server] " BLUE "Enter ID for championship you want to reschedule: " RESET, 77);
                     char ans[10];
                     char result[1000];
                     bzero(ans, 10);
@@ -930,7 +862,7 @@ int main()
 
                         if (strlen(result) > 1)
                         {
-                            write(client, "[Server] Please enter date you would like to reschedule to (format as dd.mm.yyyy): ", 83);
+                            write(client, CYAN "[Server] " BLUE "Please enter date you would like to reschedule to (format as " YELLOW "dd.mm.yyyy" BLUE "): " RESET, 115);
                             char date_candidate[100];
 
                             bzero(date_candidate, 100);
@@ -938,32 +870,32 @@ int main()
 
                             if (check_date(date_candidate) == 0)
                             {
-                                write(client, "[Server] Date entered correctly.\n[Server] Please enter the time you would like to reschedule to (format as hh:mm)\n[Server] Please note that the hour must be between 10 and 18: ", 176);
+                                write(client, CYAN "[Server] " GREEN "Date entered correctly.\n" CYAN "[Server] " BLUE "Please enter the time you would like to reschedule to (format as " YELLOW "hh:mm" BLUE ")\n" CYAN "[Server] " BLUE "Please note that the hour must be between 10 and 18: " RESET, 236);
                             }
                             else
                             {
-                                write(client, "[Server] Incorrect date format. Operation will not continue.\n[Server] Enter command: ", 85);
+                                write(client, RED "[Server] Incorrect date format. Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 110);
                             }
                         }
                         else
                         {
-                            write(client, "[Server] You have not entered this championship. Operation will not continue.\n[Server] Enter command: ", 102);
+                            write(client, RED "[Server] You have not entered this championship. Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 127);
                         }
                     }
                     else
                     {
-                        write(client, "[Server] Invalid ID. Operation will not continue.\n[Server] Enter command: ", 74);
+                        write(client, RED "[Server] Invalid ID. Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 99);
                     }
                 }
                 else if (strcmp(received, "change-username") == 0)
                 {
                     if (!logged)
                     {
-                        write(client, "[Server] Command unavailable. Log in to use this command.\n[Server] Enter command: ", 82);
+                        write(client, RED "[Server] You are not logged in. Command unavailable.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 102);
                     }
                     else
                     {
-                        write(client, "[Server] Are you sure you want to change your username? [y/n]: ", 63);
+                        write(client, CYAN "[Server] " BLUE "Are you sure you want to change your username? " YELLOW "[y/n]" BLUE ": " RESET, 95);
                         char ans[5];
                         bzero(ans, 5);
 
@@ -971,7 +903,7 @@ int main()
 
                         if (strcmp(ans, "y") == 0 || strcmp(ans, "Y") == 0)
                         {
-                            write(client, "[Server] Enter new username: ", 29);
+                            write(client, CYAN "[Server] " BLUE "Enter new username: " RESET, 47);
                             char user_to_set[1000];
                             bzero(user_to_set, 1000);
 
@@ -987,7 +919,7 @@ int main()
 
                                 if (strlen(select_users) > 1)
                                 {
-                                    write(client, "[Server] Username already exists. Operation will not continue.\n[Server] Enter command: ", 87);
+                                    write(client, RED "[Server] Username already exists. Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 112);
                                 }
                                 else
                                 {
@@ -1002,21 +934,21 @@ int main()
                                     bzero(user, 1000);
                                     strcpy(user, user_to_set);
 
-                                    write(client, "[Server] Username changed successfully.\n[Server] Enter command: ", 64);
+                                    write(client, CYAN "[Server] " GREEN "Username changed successfully.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 96);
                                 }
                             }
                             else
                             {
-                                write(client, "[Server] Username cannot contain special characters! Operation will not continue.\n[Server] Enter command: ", 106);
+                                write(client, RED "[Server] Username cannot contain special characters! Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 131);
                             }
                         }
                         else if (strcmp(ans, "n") == 0 || strcmp(ans, "N") == 0)
                         {
-                            write(client, "[Server] Operation will not continue.\n[Server] Enter command: ", 62);
+                            write(client, RED "[Server] Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 87);
                         }
                         else
                         {
-                            write(client, "[Server] Wrong input. Operation will not continue.\n[Server] Enter command: ", 75);
+                            write(client, RED "[Server] Wrong input. Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 100);
                         }
                     }
                 }
@@ -1024,11 +956,11 @@ int main()
                 {
                     if (!logged)
                     {
-                        write(client, "[Server] Command unavailable. Log in to use this command.\n[Server] Enter command: ", 82);
+                        write(client, RED "[Server] You are not logged in. Command unavailable.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 102);
                     }
                     else
                     {
-                        write(client, "[Server] Are you sure you want to change your e-mail address? [y/n]: ", 69);
+                        write(client, CYAN "[Server] " BLUE "Are you sure you want to change your e-mail address? " YELLOW "[y/n]" BLUE ": " RESET, 101);
 
                         char ans[5];
                         bzero(ans, 5);
@@ -1036,7 +968,7 @@ int main()
 
                         if (strcmp(ans, "y") == 0 || strcmp(ans, "Y") == 0)
                         {
-                            write(client, "[Server] Please enter your new e-mail address: ", 47);
+                            write(client, CYAN "[Server] " BLUE "Please enter your new e-mail address: " RESET, 65);
 
                             char email_to_set[1000];
                             bzero(email_to_set, 1000);
@@ -1045,7 +977,7 @@ int main()
                             char result[1000];
                             bzero(result, 1000);
                             bzero(sql_command, 4000);
-                            sprintf(sql_command, "SELECT EMAIL FROM USERINFO;", user);
+                            sprintf(sql_command, "SELECT EMAIL FROM USERINFO;");
                             sqlite3_exec(db, sql_command, callback1, result, &zErrMsg);
 
                             int flag_email = 0;
@@ -1058,7 +990,7 @@ int main()
                                 if (strcmp(email_to_set, token) == 0)
                                 {
                                     flag_email = 1;
-                                    write(client, "[Server] E-mail already associated with an account. Operation will not continue\n[Server] Enter command: ", 104);
+                                    write(client, RED "[Server] E-mail already associated with an account. Operation will not continue\n" CYAN "[Server] " BLUE "Enter command: " RESET, 129);
                                     break;
                                 }
 
@@ -1073,21 +1005,21 @@ int main()
                                     sprintf(sql_command, "UPDATE USERINFO SET EMAIL='%s' WHERE NAME='%s';", email_to_set, user);
                                     sqlite3_exec(db, sql_command, NULL, NULL, &zErrMsg);
 
-                                    write(client, "[Server] E-mail changed successfully.\n[Server] Enter command: ", 63);
+                                    write(client, CYAN "[Server] " GREEN "E-mail changed successfully.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 94);
                                 }
                                 else
                                 {
-                                    write(client, "[Server] Invalid e-mail. No changes have been made.\n[Server] Enter command: ", 76);
+                                    write(client, RED "[Server] Invalid e-mail. No changes have been made.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 101);
                                 }
                             }
                         }
                         else if (strcmp(ans, "n") == 0 || strcmp(ans, "N") == 0)
                         {
-                            write(client, "[Server] Operation will not continue.\n[Server] Enter command: ", 62);
+                            write(client, RED "[Server] Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 87);
                         }
                         else
                         {
-                            write(client, "[Server] Wrong input. Operation will not continue.\n[Server] Enter command: ", 75);
+                            write(client, RED "[Server] Wrong input. Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 100);
                         }
                     }
                 }
@@ -1095,11 +1027,11 @@ int main()
                 {
                     if (!logged)
                     {
-                        write(client, "[Server] Command unavailable. Log in to use this command.\n[Server] Enter command: ", 82);
+                        write(client, RED "[Server] You are not logged in. Command unavailable.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 102);
                     }
                     else
                     {
-                        write(client, "[Server] Are you sure you want to change your password? [y/n]: ", 63);
+                        write(client, CYAN "[Server] " BLUE "Are you sure you want to change your password? " YELLOW "[y/n]" BLUE ": " RESET, 95);
 
                         char ans[5];
                         bzero(ans, 5);
@@ -1107,7 +1039,7 @@ int main()
 
                         if (strcmp(ans, "y") == 0 || strcmp(ans, "Y") == 0)
                         {
-                            write(client, "[Server] Enter your current password: ", 38);
+                            write(client, CYAN "[Server] " BLUE "Enter your current password: " RESET, 56);
                             char pass_ans[1000];
                             bzero(pass_ans, 1000);
                             read(client, pass_ans, 1000);
@@ -1118,9 +1050,9 @@ int main()
                                 bzero(pass_confirm, 1000);
                                 bzero(pass_ans, 1000);
 
-                                write(client, "[Server] Enter new password: ", 29);
+                                write(client, CYAN "[Server] " BLUE "Enter new password: " RESET, 47);
                                 read(client, pass_ans, 1000);
-                                write(client, "[Server] Confirm new password: ", 31);
+                                write(client, CYAN "[Server] " BLUE "Confirm new password: " RESET, 49);
                                 read(client, pass_confirm, 1000);
 
                                 if (strcmp(pass_confirm, pass_ans) == 0)
@@ -1129,25 +1061,25 @@ int main()
                                     sprintf(sql_command, "UPDATE USERINFO SET PASS='%s' WHERE NAME='%s';", pass_confirm, user);
                                     sqlite3_exec(db, sql_command, NULL, NULL, &zErrMsg);
 
-                                    write(client, "[Server] Password changed successfully.\n[Server] Enter command: ", 64);
+                                    write(client, CYAN "[Server] " GREEN "Password changed successfully.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 96);
                                 }
                                 else
                                 {
-                                    write(client, "[Server] Passwords do not match. Operation will not continue.\n[Server] Enter command: ", 86);
+                                    write(client, RED "[Server] Passwords do not match. Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 111);
                                 }
                             }
                             else
                             {
-                                write(client, "[Server] Current password incorrect. Operation will not continue.\n[Server] Enter command: ", 90);
+                                write(client, RED "[Server] Current password incorrect. Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 115);
                             }
                         }
                         else if (strcmp(ans, "n") == 0 || strcmp(ans, "N") == 0)
                         {
-                            write(client, "[Server] Operation will not continue.\n[Server] Enter command: ", 62);
+                            write(client, RED "[Server] Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 87);
                         }
                         else
                         {
-                            write(client, "[Server] Wrong input. Operation will not continue.\n[Server] Enter command: ", 75);
+                            write(client, RED "[Server] Wrong input. Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 100);
                         }
                     }
                 }
@@ -1155,7 +1087,7 @@ int main()
                 // end of control sequence
                 // if reached, the command is considered unknown and user is informed
                 {
-                    write(client, "[Server] Unknown command entered. Please check spelling and try again.\n[Server] Enter command: ", 95);
+                    write(client, RED "[Server] Unknown command entered. Please check spelling and try again.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 120);
                 }
             }
         }
