@@ -50,7 +50,7 @@ int send_mail_declined(const char *uname, const char *mail_addr, const char *id)
     body += mail_addr;
     body += ">\r\nFrom: <cnproject112@gmail.com>\r\nCc: <cnproject112@gmail.com>\r\nMessage-ID: <dcd7cb36-11db-487a-9f3a-e652a9458efd@rfcpedant.championship.org>\r\nSubject: Championship notification\r\n\r\nHello, ";
     body += uname;
-    body += ".\tYou have been declined participation in championship with ID ";
+    body += ". You have been declined participation in championship with ID ";
     body += id;
     body += " because the maximum player number has been reached.\nTry joining another championship from your account.\n";
     body += "\r\n\r\n";
@@ -76,6 +76,8 @@ int send_mail_declined(const char *uname, const char *mail_addr, const char *id)
         curl_easy_setopt(curl, CURLOPT_USERNAME, "cnproject112@gmail.com");
         curl_easy_setopt(curl, CURLOPT_PASSWORD, "[123]223");
 
+        curl_easy_setopt(curl, CURLOPT_LOGIN_OPTIONS, "AUTH=LOGIN");
+
         recipients = curl_slist_append(recipients, addr);
         recipients = curl_slist_append(recipients, CC_ADDR);
         curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
@@ -93,23 +95,31 @@ int send_mail_declined(const char *uname, const char *mail_addr, const char *id)
         curl_slist_free_all(recipients);
         curl_easy_cleanup(curl);
     }
+
+    free(payload_text);
+
     return (int)res;
 }
 
 int send_mail_1v1(const char *first_player, const char *second_player, const char *date, const char *first_player_mail, const char *second_player_mail, const char *id)
 {
+    std::vector<std::string> options = {"notification", "info"};
+
     std::string body;
     body += "Date: Tue, 29 Dec 2021 20:54:29 +1100\r\nTo: <";
     body += first_player_mail;
-    body += ">\r\nFrom: <cnproject112@gmail.com>\r\nCc: <cnproject112@gmail.com>\r\nMessage-ID: <dcd7cb36-11db-487a-9f3a-e652a9458efd@rfcpedant.championship.org>\r\nSubject: Championship notification\r\n\r\nHello, ";
+    body += ">\r\nFrom: <cnproject112@gmail.com>\r\nCc: <cnproject112@gmail.com>\r\nMessage-ID: <dcd7cb36-11db-487a-9f3a-e652a9458efd@rfcpedant.championship.org>\r\n";
+    body += "Subject: Championship info";
+    body += rand();
+    body += "\r\n\r\nHello, ";
     body += first_player;
-    body += ".\tYou have been accepted to the championship with ID ";
+    body += ". You have been accepted to the championship with ID ";
     body += id;
     body += ".\n\tYour opponent is ";
     body += second_player;
-    body += "and your match date is ";
+    body += " and your match date is ";
     body += date;
-    body += ".\nLooking forward to seeing you play.\r\n\r\n";
+    body += ".\nYou can change your game date by entering your account and using the 'change-date' command. \nLooking forward to seeing you play.\r\n\r\n";
 
     payload_text = (char *)(malloc(sizeof(char *) * body.length() + 1));
 
@@ -134,6 +144,7 @@ int send_mail_1v1(const char *first_player, const char *second_player, const cha
         curl_easy_setopt(curl, CURLOPT_MAIL_FROM, FROM_ADDR);
         curl_easy_setopt(curl, CURLOPT_USERNAME, "cnproject112@gmail.com");
         curl_easy_setopt(curl, CURLOPT_PASSWORD, "[123]223");
+        curl_easy_setopt(curl, CURLOPT_LOGIN_OPTIONS, "AUTH=LOGIN");
 
         // adding recipient to list and adding default e-mail
         // address so verification can be made
@@ -157,6 +168,9 @@ int send_mail_1v1(const char *first_player, const char *second_player, const cha
         curl_slist_free_all(recipients);
         curl_easy_cleanup(curl);
     }
+
+    free(payload_text);
+
     return (int)res;
 }
 
@@ -195,17 +209,12 @@ int send_mail_2v2(const char *user, const char *teammate, const char *opp_1, con
     curl = curl_easy_init();
     if (curl)
     {
-        // mailserver URL
         curl_easy_setopt(curl, CURLOPT_URL, "smtps://smtp.gmail.com:465");
 
-        // specifying uname and pass in code since it's a local app and
-        // security is not really a concern
         curl_easy_setopt(curl, CURLOPT_MAIL_FROM, FROM_ADDR);
         curl_easy_setopt(curl, CURLOPT_USERNAME, "cnproject112@gmail.com");
         curl_easy_setopt(curl, CURLOPT_PASSWORD, "[123]223");
 
-        // adding recipient to list and adding default e-mail
-        // address so verification can be made
         recipients = curl_slist_append(recipients, email);
         recipients = curl_slist_append(recipients, CC_ADDR);
         curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
@@ -220,11 +229,11 @@ int send_mail_2v2(const char *user, const char *teammate, const char *opp_1, con
             fprintf(stderr, "[Server] curl_easy_perform() failed: %s\n",
                     curl_easy_strerror(res));
 
-        // clearing recipient list and cleanup
-        // since curl doesn't automatically do
-        // it after sending an e-mail
         curl_slist_free_all(recipients);
         curl_easy_cleanup(curl);
     }
+
+    free(payload_text);
+
     return (int)res;
 }

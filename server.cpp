@@ -1,16 +1,17 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "cert-err34-c"
 #include "match_handler.h"
 #include "mail_handler.h"
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/time.h>
 #include <netinet/in.h>
 #include <unistd.h>
-#include <errno.h>
-#include <arpa/inet.h>
+#include <cerrno>
 #include <sqlite3.h>
 #include <ctime>
 #include <string>
 #include <regex>
+#include <algorithm>
 
 #define RED "\e[1;31m"
 #define GREEN "\e[1;32m"
@@ -23,6 +24,12 @@
 #define PORT 2728
 
 std::vector<std::string> players;
+
+void remove_from_players(std::vector<std::string> losers)
+{
+    for (auto player_name : losers)
+        players.erase(std::remove(players.begin(), players.end(), player_name), players.end());
+}
 
 // sqlite3 callback for SELECT operation
 static int callback1(void *ans, int argc, char **argv, char **azColName)
@@ -601,7 +608,7 @@ int main()
                             if (strcmp(decider, "1") == 0)
                             {
                                 flag_decider = 0;
-                                write(client, CYAN "[Server] " BLUE "Random decider rule set.\n" RESET, 53);
+                                write(client, CYAN "[Server] " BLUE "Random decider rule set.\n" RESET, 52);
                             }
                             else if (strcmp(decider, "2") == 0)
                             {
@@ -623,8 +630,10 @@ int main()
                             if ((atoi(decider) == 1 || atoi(decider) == 2) && (atoi(rules) == 1 || atoi(rules) == 2) && checkplayernum(playernum, atoi(decider) == 0))
                             {
                                 bzero(sql_command, 1000);
-                                sprintf(sql_command, "INSERT INTO CHAMPIONSHIPS VALUES ((SELECT MAX(ID) FROM CHAMPIONSHIPS) + 1, '%s', %d, %d, %d, 0);", game_name, atoi(playernum), atoi(rules), atoi(decider));
+                                sprintf(sql_command, "INSERT INTO CHAMPIONSHIPS VALUES ((SELECT MAX(ID) FROM CHAMPIONSHIPS) + 1, '%s', %d, %d, %d, 0, 0);", game_name, atoi(playernum), atoi(rules), atoi(decider));
                                 rc = sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
+
+                                write(client, CYAN "[Server]" GREEN " Championship created successfully.\n" CYAN "[Server]" BLUE " Enter command: " RESET, 100);
                             }
                             else
                             {
@@ -699,10 +708,6 @@ int main()
                                 else if (strcmp(decider, "2") == 0)
                                 {
                                     strcpy(decide, "Alphabetical order");
-                                }
-                                else
-                                {
-                                    strcpy(decide, "Point based system");
                                 }
 
                                 sprintf(championships + strlen(championships), BLUE "%s\t" YELLOW "%s\t%s\t\t%s\t\t%s\t\t%s\n" RESET, champ_id, game_name, playercount, rule, decide, playerentered);
@@ -791,7 +796,7 @@ int main()
                                     else
                                     {
                                         bzero(sql_command, 4000);
-                                        sprintf(sql_command, "INSERT INTO SIGNEDUP VALUES ('%s', %s, 'necaz')", user, ans);
+                                        sprintf(sql_command, "INSERT INTO SIGNEDUP VALUES ('%s', %s, '0')", user, ans);
                                         sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
 
                                         bzero(sql_command, 4000);
@@ -822,7 +827,7 @@ int main()
 
                                         if (regula == 1)
                                         {
-                                            if (strcmp(decider, "1") == 0)
+                                            if (strcmp(decider, "2") == 0)
                                             {
                                                 char answer[4000];
                                                 bzero(answer, 4000);
@@ -832,66 +837,94 @@ int main()
 
                                                 while (strlen(answer) > 1)
                                                 {
-                                                    char *tkn_1 = strtok(answer, "\n");
-                                                    char* tkn = strtok(nullptr, "\n");
-                                                    if (tkn == nullptr) // there's only one player left, which is the championship winner
+                                                    std::string check(answer);
+                                                    if (std::count(check.begin(), check.end(), '\n') == 1)
                                                     {
+                                                        char *winner_name = strtok(answer, "\n");
                                                         bzero(sql_command, 4000);
-                                                        sprintf(sql_command, "DELETE FROM CHAMPIONSHIPS WHERE ID='%s';", ans);
+                                                        sprintf(sql_command, "UPDATE CHAMPIONSHIPS SET FINISHED=1 WHERE ID='%s';", ans);
                                                         sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
 
                                                         bzero(sql_command, 4000);
-                                                        sprintf(sql_command, "UPDATE USERINFO SET SCORE=SCORE+200 WHERE NAME='%s';", tkn_1);
+                                                        sprintf(sql_command, "UPDATE USERINFO SET SCORE=SCORE+200 WHERE NAME='%s';", winner_name);
                                                         sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
 
                                                         bzero(sql_command, 40000);
-                                                        sprintf(sql_command, "DELETE FROM SIGNEDUP WHERE USENAME='%s' AND CHAMPID='%s';", tkn_1, ans);
+                                                        sprintf(sql_command, "DELETE FROM SIGNEDUP WHERE USENAME='%s' AND CHAMPID='%s';", winner_name, ans);
                                                         sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
-                                                        
+
                                                         matches = fopen("matches.txt", "a");
-                                                        fprintf(matches, "Player %s won championship with ID %s and got 200 points.\n", tkn_1, ans);
+                                                        fprintf(matches, "Player %s won championship with ID %s and got 200 points.\n", winner_name, ans);
                                                         fclose(matches);
 
-                                                        break;
-                                                    }
-                                                    else
-                                                    {
-
-                                                    }
-
-                                                    sprintf(sql_command, "SELECT USERNAME FROM SIGNEDUP WHERE CHAMPID='%s' ORDER BY USERNAME;", ans);
-                                                    sqlite3_exec(db, sql_command, callback2, nullptr, &zErrMsg);
-
-                                                    int i = 0;
-                                                    while (i < players.size())
-                                                    {
-                                                        char first_player[players[i].length()];
-                                                        strcpy(first_player, players[i].c_str());
-
-                                                        i++;
-
-                                                        char second_player[players[i].length()];
-                                                        strcpy(second_player, players[i].c_str());
-
-                                                        i++;
-
-                                                        char result[1000];
-                                                        bzero(result, 1000);
-                                                        bzero(sql_command, 4000);
-                                                        sqlite3_exec(db, sql_command, callback1, result, &zErrMsg);
-
-                                                        char *first_mail = strtok(result, "\n");
-                                                        char *second_mail = strtok(nullptr, "\n");
-
-                                                        char *date = calculate_date();
-                                                        // send_mail_1v1(first_player, second_player, date, first_mail, second_mail, ans);
-                                                        // send_mail_1v1(second_player, first_player, date, second_mail, first_mail, ans);
-
-                                                        play_match_1v1(first_player, second_player, ans, date);
                                                         bzero(answer, 4000);
                                                         bzero(sql_command, 4000);
                                                         sprintf(sql_command, "SELECT USERNAME FROM SIGNEDUP WHERE CHAMPID='%s';", ans);
                                                         sqlite3_exec(db, sql_command, callback1, answer, &zErrMsg);
+                                                    }
+                                                    else
+                                                    {
+                                                        sprintf(sql_command, "SELECT USERNAME FROM SIGNEDUP WHERE CHAMPID='%s' ORDER BY USERNAME;", ans);
+                                                        sqlite3_exec(db, sql_command, callback2, nullptr, &zErrMsg);
+
+                                                        std::vector<std::string> losers;
+                                                        int i = 0, dim = players.size();
+                                                        while (i < dim)
+                                                        {
+                                                            char first_player[players[i].length()];
+                                                            strcpy(first_player, players[i].c_str());
+
+                                                            i++;
+
+                                                            char second_player[players[i].length()];
+                                                            strcpy(second_player, players[i].c_str());
+
+                                                            i++;
+
+                                                            printf("i = %d\nfirst_player(players[i - 1]) = %s\nsecond_player = %s\n", i, first_player, second_player);
+
+                                                            char first_mail[1000];
+                                                            bzero(first_mail, 1000);
+                                                            bzero(sql_command, 4000);
+                                                            sprintf(sql_command, "SELECT EMAIL FROM USERINFO WHERE NAME = '%s';", first_player);
+                                                            sqlite3_exec(db, sql_command, callback1, first_mail, &zErrMsg);
+                                                            first_mail[strlen(first_mail) - 1] = '\0';
+
+                                                            char second_mail[1000];
+                                                            bzero(second_mail, 1000);
+                                                            bzero(sql_command, 4000);
+                                                            sprintf(sql_command, "SELECT EMAIL FROM USERINFO WHERE NAME = '%s';", second_player);
+                                                            sqlite3_exec(db, sql_command, callback1, second_mail, &zErrMsg);
+                                                            second_mail[strlen(second_mail) - 1] = '\0';
+
+                                                            printf("first_player_mail = %s\nsecond_player_mail = %s\n", first_mail, second_mail);
+
+                                                            char *date = calculate_date();
+
+                                                            printf("date: %s\n", date);
+                                                            send_mail_1v1(first_player, second_player, date, first_mail, second_mail, ans);
+                                                            send_mail_1v1(second_player, first_player, date, second_mail, first_mail, ans);
+
+                                                            int winner = play_match_1v1(first_player, second_player, ans, date);
+
+                                                            if (winner == 0)
+                                                            {
+                                                                losers.push_back(second_player);
+                                                            }
+                                                            else
+                                                            {
+                                                                losers.push_back(first_player);
+                                                            }
+                                                        }
+                                                        remove_from_players(losers);
+                                                        std::cout << "removed losers from players, new size: " << players.size() << "\n";
+
+                                                        bzero(answer, 4000);
+                                                        bzero(sql_command, 4000);
+                                                        sprintf(sql_command, "SELECT USERNAME FROM SIGNEDUP WHERE CHAMPID='%s';", ans);
+                                                        sqlite3_exec(db, sql_command, callback1, answer, &zErrMsg);
+
+                                                        printf("Select result: %s\n\n", answer);
                                                     }
                                                 }
                                             }
@@ -1152,3 +1185,5 @@ int main()
         }
     }
 }
+
+#pragma clang diagnostic pop
