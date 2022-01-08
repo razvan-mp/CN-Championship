@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cert-err34-c"
 #include "match_handler.h"
 #include "mail_handler.h"
 #include <sys/types.h>
