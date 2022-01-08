@@ -3,16 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <curl/curl.h>
-#include <cstring>
+#include <string>
 
 // defines for mail sending service
 #define FROM_ADDR "<cnproject112@gmail.com>"
 #define CC_ADDR "<cnproject112@gmail.com>"
-#define FROM_MAIL "Championship " FROM_ADDR
-#define TO_MAIL "Player " TO_ADDR
-#define CC_MAIL "Admin " CC_ADDR
-
-using std::cout;
 
 struct upload_status
 {
@@ -60,7 +55,7 @@ int send_mail_declined(const char *uname, const char *mail_addr, const char *id)
     body += " because the maximum player number has been reached.\nTry joining another championship from your account.\n";
     body += "\r\n\r\n";
 
-    payload_text = (char *)malloc(sizeof(char *) * std::size(body) + 1);
+    payload_text = (char *)malloc(sizeof(char *) * body.length() + 1);
 
     strcpy(payload_text, body.c_str());
 
@@ -113,10 +108,10 @@ int send_mail_1v1(const char *first_player, const char *second_player, const cha
     body += ".\n\tYour opponent is ";
     body += second_player;
     body += "and your match date is ";
-    body += "Tue 28 DEC";
+    body += date;
     body += ".\nLooking forward to seeing you play.\r\n\r\n";
 
-    payload_text = (char *)(malloc(sizeof(char *) * std::size(body) + 1));
+    payload_text = (char *)(malloc(sizeof(char *) * body.length() + 1));
 
     strcpy(payload_text, body.c_str());
 
@@ -182,10 +177,10 @@ int send_mail_2v2(const char *user, const char *teammate, const char *opp_1, con
     body += " and ";
     body += opp_2;
     body += ".\nYour match is set for ";
-    body += "Tue 28 DEC";
+    body += date;
     body += ".\nEnter your account and enter 'change-date' if you're unavailable to play. But if it's all good, we're looking forward to seeing you play.\r\n\r\n";
 
-    payload_text = (char *)(malloc(sizeof(char *) * std::size(body) + 1));
+    payload_text = (char *)(malloc(sizeof(char *) * body.length() + 1));
 
     strcpy(payload_text, body.c_str());
 

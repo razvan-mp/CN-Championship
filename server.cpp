@@ -22,6 +22,8 @@
 
 #define PORT 2728
 
+std::vector<std::string> players;
+
 // sqlite3 callback for SELECT operation
 static int callback1(void *ans, int argc, char **argv, char **azColName)
 {
@@ -32,6 +34,14 @@ static int callback1(void *ans, int argc, char **argv, char **azColName)
         strcat(answer, argv[i]);
         strcat(answer, "\n");
     }
+
+    return 0;
+}
+
+static int callback2(void *ans, int argc, char **argv, char **azColName)
+{
+    std::string tmp(argv[0]);
+    players.push_back(tmp);
 
     return 0;
 }
@@ -60,12 +70,12 @@ int checkplayernum(char *str, int decider)
 
     if (decider == 1)
     {
-        if (power_of_two(atoi(str)) == false)
+        if (!power_of_two(atoi(str)))
             return 1;
     }
     else if (decider == 2)
     {
-        if (power_of_four(atoi(str)) == false)
+        if (!power_of_four(atoi(str)))
             return 1;
     }
     else
@@ -98,12 +108,12 @@ char *calculate_date()
 {
     int possibilities[4] = {0, 15, 30, 45};
 
-    srand(time(NULL));
+    srand(time(nullptr));
 
     int option = rand() % 4;
     struct tm date = {0, possibilities[option], rand() % (18 - 10 + 1) + 10};
 
-    time_t t = time(NULL);
+    time_t t = time(nullptr);
     struct tm now = *localtime(&t);
 
     int year = now.tm_year + 1901;
@@ -133,13 +143,13 @@ int check_date(char *str)
         return 1;
     }
 
-    char *mm = strtok(NULL, ".");
+    char *mm = strtok(nullptr, ".");
     if (strlen(mm) != 2 || check_id_number(mm) == 1)
     {
         return 1;
     }
 
-    char *yyyy = strtok(NULL, ".");
+    char *yyyy = strtok(nullptr, ".");
     if (strlen(yyyy) != 4 || check_id_number(yyyy) == 1)
     {
         return 1;
@@ -245,7 +255,7 @@ int main()
         else if (pid == 0)
         {
             sqlite3 *db;
-            char *zErrMsg = 0;
+            char *zErrMsg = nullptr;
             int rc;
             rc = sqlite3_open("userinfo.db", &db);
 
@@ -347,7 +357,7 @@ int main()
                         {
                             write(client, RED "[Server] " RED "User already exists! Try logging in.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 102);
                         }
-                        else if (check_username(user) == false)
+                        else if (!check_username(user))
                         {
                             write(client, RED "[Server] " RED "Username cannot contain special characters! Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 138);
                         }
@@ -355,12 +365,12 @@ int main()
                         {
                             // check if user is in whitelist
                             FILE *fp;
-                            char *line = NULL;
+                            char *line = nullptr;
                             size_t len = 0;
                             ssize_t bytes_read;
 
                             fp = fopen("whitelist.txt", "r");
-                            if (fp == NULL)
+                            if (fp == nullptr)
                                 exit(EXIT_FAILURE);
 
                             uType = 1;
@@ -382,7 +392,7 @@ int main()
                             sprintf(sql_command, "INSERT INTO USERINFO VALUES ('%s', '%s', '%s', %d, 0);", user, pass, mail, uType);
 
                             write(client, CYAN "[Server] " BLUE "Account created successfully.\n" CYAN "[Server] " BLUE "Enter " YELLOW "help" BLUE " for a list of commands or enter command: " RESET, 146);
-                            rc = sqlite3_exec(db, sql_command, NULL, 0, &zErrMsg);
+                            rc = sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
 
                             if (rc != SQLITE_OK)
                             {
@@ -438,8 +448,8 @@ int main()
                             if (strlen(result) > 1)
                             {
                                 char *typee = strtok(result, "\n");
-                                typee = strtok(NULL, "\n");
-                                typee = strtok(NULL, "\n");
+                                typee = strtok(nullptr, "\n");
+                                typee = strtok(nullptr, "\n");
                                 logged = 1;
                                 userType = atoi(typee);
                                 printf("[Server] User/pass combo correct.\n");
@@ -505,12 +515,12 @@ int main()
                         // check if user is in whitelist
                         int flag = 0; // user is not in whitelist
                         FILE *fp;
-                        char *line = NULL;
+                        char *line = nullptr;
                         size_t len = 0;
                         ssize_t bytes_read;
 
                         fp = fopen("whitelist.txt", "r");
-                        if (fp == NULL)
+                        if (fp == nullptr)
                             exit(EXIT_FAILURE);
 
                         while ((bytes_read = getline(&line, &len, fp)) != -1)
@@ -614,7 +624,7 @@ int main()
                             {
                                 bzero(sql_command, 1000);
                                 sprintf(sql_command, "INSERT INTO CHAMPIONSHIPS VALUES ((SELECT MAX(ID) FROM CHAMPIONSHIPS) + 1, '%s', %d, %d, %d, 0);", game_name, atoi(playernum), atoi(rules), atoi(decider));
-                                rc = sqlite3_exec(db, sql_command, NULL, 0, &zErrMsg);
+                                rc = sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
                             }
                             else
                             {
@@ -666,11 +676,11 @@ int main()
                                 rc = sqlite3_exec(db, sql_command, callback1, result, &zErrMsg);
 
                                 champ_id = strtok(result, "\n");
-                                game_name = strtok(NULL, "\n");
-                                playercount = strtok(NULL, "\n");
-                                rules = strtok(NULL, "\n");
-                                decider = strtok(NULL, "\n");
-                                playerentered = strtok(NULL, "\n");
+                                game_name = strtok(nullptr, "\n");
+                                playercount = strtok(nullptr, "\n");
+                                rules = strtok(nullptr, "\n");
+                                decider = strtok(nullptr, "\n");
+                                playerentered = strtok(nullptr, "\n");
 
                                 char rule[100], decide[100];
                                 if (strcmp(rules, "1") == 0)
@@ -758,8 +768,6 @@ int main()
                                 }
                                 else
                                 {
-                                    printf("Player split select: %s\n", result);
-
                                     bzero(sql_command, 4000);
                                     sprintf(sql_command, "SELECT PLAYERNUM, ENTERED FROM CHAMPIONSHIPS WHERE ID=%s;", ans);
                                     bzero(result, 1000);
@@ -768,7 +776,7 @@ int main()
                                     char *playernum, *entered;
 
                                     playernum = strtok(result, "\n");
-                                    entered = strtok(NULL, "\n");
+                                    entered = strtok(nullptr, "\n");
 
                                     if (atoi(entered) >= atoi(playernum))
                                     {
@@ -784,11 +792,11 @@ int main()
                                     {
                                         bzero(sql_command, 4000);
                                         sprintf(sql_command, "INSERT INTO SIGNEDUP VALUES ('%s', %s, 'necaz')", user, ans);
-                                        sqlite3_exec(db, sql_command, NULL, NULL, &zErrMsg);
+                                        sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
 
                                         bzero(sql_command, 4000);
                                         sprintf(sql_command, "UPDATE CHAMPIONSHIPS SET ENTERED = ENTERED + 1 WHERE ID = '%s';", ans);
-                                        sqlite3_exec(db, sql_command, NULL, NULL, &zErrMsg);
+                                        sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
                                     }
 
                                     bzero(sql_command, 4000);
@@ -800,9 +808,9 @@ int main()
 
                                     rule = strtok(result, "\n");
                                     int regula = atoi(rule);
-                                    decider = strtok(NULL, "\n");
-                                    players_entered = strtok(NULL, "\n");
-                                    total_players = strtok(NULL, "\n");
+                                    decider = strtok(nullptr, "\n");
+                                    players_entered = strtok(nullptr, "\n");
+                                    total_players = strtok(nullptr, "\n");
 
                                     int is_playernum_ok = 1;
                                     if (atoi(players_entered) == atoi(total_players))
@@ -810,30 +818,81 @@ int main()
 
                                     if (is_playernum_ok == 0)
                                     {
-                                        char players[4000];
-                                        bzero(players, 4000);
                                         bzero(sql_command, 4000);
 
                                         if (regula == 1)
                                         {
                                             if (strcmp(decider, "1") == 0)
                                             {
-                                                sprintf(sql_command, "SELECT USERNAME FROM SIGNEDUP WHERE CHAMPID='%s' ORDER BY USERNAME;", ans);
-                                                sqlite3_exec(db, sql_command, callback1, players, &zErrMsg);
+                                                char answer[4000];
+                                                bzero(answer, 4000);
+                                                bzero(sql_command, 4000);
+                                                sprintf(sql_command, "SELECT USERNAME FROM SIGNEDUP WHERE CHAMPID='%s';", ans);
+                                                sqlite3_exec(db, sql_command, callback1, answer, &zErrMsg);
 
-                                                char* token = strtok(players, "");
-
-                                                while (token != NULL)
+                                                while (strlen(answer) > 1)
                                                 {
-                                                    token = strtok(NULL, "\n");
-                                                    char* first_player;
-                                                    strcpy(first_player, token);
+                                                    char *tkn_1 = strtok(answer, "\n");
+                                                    char* tkn = strtok(nullptr, "\n");
+                                                    if (tkn == nullptr) // there's only one player left, which is the championship winner
+                                                    {
+                                                        bzero(sql_command, 4000);
+                                                        sprintf(sql_command, "DELETE FROM CHAMPIONSHIPS WHERE ID='%s';", ans);
+                                                        sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
 
-                                                    token = strtok(NULL, "\n");
-                                                    char* second_player;
-                                                    strcpy(second_player, token);
+                                                        bzero(sql_command, 4000);
+                                                        sprintf(sql_command, "UPDATE USERINFO SET SCORE=SCORE+200 WHERE NAME='%s';", tkn_1);
+                                                        sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
 
-                                                    printf("%s - %s\n", first_player, second_player);
+                                                        bzero(sql_command, 40000);
+                                                        sprintf(sql_command, "DELETE FROM SIGNEDUP WHERE USENAME='%s' AND CHAMPID='%s';", tkn_1, ans);
+                                                        sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
+                                                        
+                                                        matches = fopen("matches.txt", "a");
+                                                        fprintf(matches, "Player %s won championship with ID %s and got 200 points.\n", tkn_1, ans);
+                                                        fclose(matches);
+
+                                                        break;
+                                                    }
+                                                    else
+                                                    {
+
+                                                    }
+
+                                                    sprintf(sql_command, "SELECT USERNAME FROM SIGNEDUP WHERE CHAMPID='%s' ORDER BY USERNAME;", ans);
+                                                    sqlite3_exec(db, sql_command, callback2, nullptr, &zErrMsg);
+
+                                                    int i = 0;
+                                                    while (i < players.size())
+                                                    {
+                                                        char first_player[players[i].length()];
+                                                        strcpy(first_player, players[i].c_str());
+
+                                                        i++;
+
+                                                        char second_player[players[i].length()];
+                                                        strcpy(second_player, players[i].c_str());
+
+                                                        i++;
+
+                                                        char result[1000];
+                                                        bzero(result, 1000);
+                                                        bzero(sql_command, 4000);
+                                                        sqlite3_exec(db, sql_command, callback1, result, &zErrMsg);
+
+                                                        char *first_mail = strtok(result, "\n");
+                                                        char *second_mail = strtok(nullptr, "\n");
+
+                                                        char *date = calculate_date();
+                                                        // send_mail_1v1(first_player, second_player, date, first_mail, second_mail, ans);
+                                                        // send_mail_1v1(second_player, first_player, date, second_mail, first_mail, ans);
+
+                                                        play_match_1v1(first_player, second_player, ans, date);
+                                                        bzero(answer, 4000);
+                                                        bzero(sql_command, 4000);
+                                                        sprintf(sql_command, "SELECT USERNAME FROM SIGNEDUP WHERE CHAMPID='%s';", ans);
+                                                        sqlite3_exec(db, sql_command, callback1, answer, &zErrMsg);
+                                                    }
                                                 }
                                             }
                                         }
@@ -925,11 +984,11 @@ int main()
                                 {
                                     bzero(sql_command, 4000);
                                     sprintf(sql_command, "UPDATE USERINFO SET NAME='%s' WHERE NAME='%s';", user_to_set, user);
-                                    sqlite3_exec(db, sql_command, NULL, NULL, &zErrMsg);
+                                    sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
 
                                     bzero(sql_command, 4000);
                                     sprintf(sql_command, "UPDATE SIGNEDUP SET USERNAME='%s' WHERE USERNAME='%s';", user_to_set, user);
-                                    sqlite3_exec(db, sql_command, NULL, NULL, &zErrMsg);
+                                    sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
 
                                     bzero(user, 1000);
                                     strcpy(user, user_to_set);
@@ -994,7 +1053,7 @@ int main()
                                     break;
                                 }
 
-                                token = strtok(NULL, "\n");
+                                token = strtok(nullptr, "\n");
                             }
 
                             if (flag_email == 0)
@@ -1003,7 +1062,7 @@ int main()
                                 {
                                     bzero(sql_command, 4000);
                                     sprintf(sql_command, "UPDATE USERINFO SET EMAIL='%s' WHERE NAME='%s';", email_to_set, user);
-                                    sqlite3_exec(db, sql_command, NULL, NULL, &zErrMsg);
+                                    sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
 
                                     write(client, CYAN "[Server] " GREEN "E-mail changed successfully.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 94);
                                 }
@@ -1059,7 +1118,7 @@ int main()
                                 {
                                     bzero(sql_command, 4000);
                                     sprintf(sql_command, "UPDATE USERINFO SET PASS='%s' WHERE NAME='%s';", pass_confirm, user);
-                                    sqlite3_exec(db, sql_command, NULL, NULL, &zErrMsg);
+                                    sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
 
                                     write(client, CYAN "[Server] " GREEN "Password changed successfully.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 96);
                                 }
