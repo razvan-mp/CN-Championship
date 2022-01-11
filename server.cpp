@@ -14,7 +14,7 @@
 #define RED "\e[1;31m"
 #define GREEN "\e[1;32m"
 #define YELLOW "\e[1;33m"
-#define BLUE "\e[1;34m"
+#define BLUE "\e[34m"
 #define MAGENTA "\e[1;35m"
 #define CYAN "\e[1;36m"
 #define RESET "\x1b[0m"
@@ -394,23 +394,30 @@ int main()
                             write(client, CYAN "[Server] " BLUE "Please provide your email address: " RESET, 62);
                             read(client, mail, 1000);
 
-                            // create sql operation string
-                            bzero(sql_command, 4000);
-                            sprintf(sql_command, "INSERT INTO USERINFO VALUES ('%s', '%s', '%s', %d, 0);", user, pass, mail, uType);
-
-                            write(client, CYAN "[Server] " BLUE "Account created successfully.\n" CYAN "[Server] " BLUE "Enter " YELLOW "help" BLUE " for a list of commands or enter command: " RESET, 146);
-                            rc = sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
-
-                            if (rc != SQLITE_OK)
+                            if (check_email(mail))
                             {
-                                printf("[Server] DB Error. Server will shut down.\n");
-                                close(client);
-                                return 1;
+                                // create sql operation string
+                                bzero(sql_command, 4000);
+                                sprintf(sql_command, "INSERT INTO USERINFO VALUES ('%s', '%s', '%s', %d, 0);", user, pass, mail, uType);
+
+                                write(client, CYAN "[Server] " BLUE "Account created successfully.\n" CYAN "[Server] " BLUE "Enter " YELLOW "help" BLUE " for a list of commands or enter command: " RESET, 146);
+                                rc = sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
+
+                                if (rc != SQLITE_OK)
+                                {
+                                    printf("[Server] DB Error. Server will shut down.\n");
+                                    close(client);
+                                    return 1;
+                                }
+                                else
+                                {
+                                    printf("[Server] User information saved successfully.\n");
+                                    fflush(stdout);
+                                }
                             }
                             else
                             {
-                                printf("[Server] User information saved successfully.\n");
-                                fflush(stdout);
+                                write(client, RED "[Server] Invalid e-mail address. Operation will not continue.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 111);
                             }
                         }
                     }
@@ -440,7 +447,7 @@ int main()
 
                         if (strlen(result) > 1)
                         {
-                            printf("[Server] username exists. Sending pass prompt...\n");
+                            printf("[Server] Username exists. Sending pass prompt...\n");
                             fflush(stdout);
                             write(client, CYAN "[Server]" BLUE " Enter your password: " RESET, 48);
 
@@ -581,63 +588,76 @@ int main()
                             bzero(rules, 1000);
                             read(client, rules, 1000);
 
-                            int flag_rules = -1;
-
                             if (strcmp(rules, "1") == 0)
                             {
-                                flag_rules = 1;
-                                write(client, CYAN "[Server]" GREEN " 1 V 1 rule set.\n" RESET, 43);
+                                write(client, CYAN "[Server]" GREEN " 1 V 1 rule set.\n" CYAN "[Server] " BLUE "Please choose an option for deciding matchups: \n\t1. " YELLOW "Random\n\t" BLUE "2. " YELLOW "Alphabetical\n" CYAN "[Server] " BLUE "Option: " RESET, 194);
                             }
                             else if (strcmp(rules, "2") == 0)
                             {
-                                flag_rules = 1;
-                                write(client, CYAN "[Server] " GREEN "2 V 2 rule set.\n" RESET, 43);
+                                write(client, CYAN "[Server] " GREEN "2 V 2 rule set.\n" CYAN "[Server] " BLUE "Please choose an option for deciding matchups: \n\t1. " YELLOW "Random\n\t" BLUE "2. " YELLOW "Alphabetical\n" CYAN "[Server] " BLUE "Option: " RESET, 194);
                             }
                             else
                             {
-                                flag_rules = 1;
+                                bzero(rules, 1000);
+                                strcpy(rules, "1");
+                                write(client, MAGENTA "[Server] Another option was entered. Will resort to default, which is option 1.\n" CYAN "[Server] " BLUE "Please choose an option for deciding matchups: \n\t1. " YELLOW "Random\n\t" BLUE "2. " YELLOW "Alphabetical\n" CYAN "[Server] " BLUE "Option: " RESET, 242);
                             }
 
                             // set decider
-                            write(client, CYAN "[Server] " BLUE "Please choose an option for deciding matchups: \n\t1. " YELLOW "Random\n\t" BLUE "2. " YELLOW "Alphabetical\n" CYAN "[Server] " BLUE "Option: " RESET, 155);
                             bzero(decider, 1000);
                             read(client, decider, 1000);
 
-                            int flag_decider = -1;
-
                             if (strcmp(decider, "1") == 0)
                             {
-                                flag_decider = 0;
-                                write(client, CYAN "[Server] " BLUE "Random decider rule set.\n" RESET, 52);
+                                if (strcmp(rules, "1") == 0)
+                                {
+                                    write(client, CYAN "[Server] " BLUE "Random decider rule set.\n" CYAN "[Server] " BLUE "Please enter player number (must be a power of 2): " RESET, 126);
+                                }
+                                else
+                                {
+                                    write(client, CYAN "[Server] " BLUE "Random decider rule set.\n" CYAN "[Server] " BLUE "Please enter player number (must be a power of 4): " RESET, 126);
+                                }
                             }
                             else if (strcmp(decider, "2") == 0)
                             {
-                                flag_decider = 0;
-                                write(client, CYAN "[Server] " BLUE "Alphabetical decider rule set.\n" RESET, 58);
+                                if (strcmp(rules, "1") == 0)
+                                {
+                                    write(client, CYAN "[Server] " BLUE "Alphabetical decider rule set.\n" CYAN "[Server] " BLUE "Please enter player number (must be a power of 2): " RESET, 132);
+                                }
+                                else
+                                {
+                                    write(client, CYAN "[Server] " BLUE "Alphabetical decider rule set.\n" CYAN "[Server] " BLUE "Please enter player number (must be a power of 4): " RESET, 132);
+                                }
                             }
                             else
                             {
-                                flag_decider = 1;
+                                bzero(decider, 1000);
+                                strcpy(decider, "1");
+                                if (strcmp(rules, "1") == 0)
+                                {
+                                    write(client, MAGENTA "[Server] Another option was entered. Will resort to default, which is option 1.\n" CYAN "[Server] " BLUE "Please enter player number (must be a power of 2): " RESET, 165);
+                                }
+                                else
+                                {
+                                    write(client, MAGENTA "[Server] Another option was entered. Will resort to default, which is option 1.\n" CYAN "[Server] " BLUE "Please enter player number (must be a power of 4): " RESET, 165);
+                                }
                             }
 
                             // set player number
-                            write(client, CYAN "[Server] " BLUE "Please enter player number: " RESET, 55);
                             bzero(playernum, 1000);
                             read(client, playernum, 1000);
 
-                            write(client, CYAN "[Server] " GREEN "Player number set. " BLUE "Trying to create championship...\n" RESET, 86);
-
-                            if ((atoi(decider) == 1 || atoi(decider) == 2) && (atoi(rules) == 1 || atoi(rules) == 2) && checkplayernum(playernum, atoi(decider) == 0))
+                            if ((atoi(decider) == 1 || atoi(decider) == 2) && (atoi(rules) == 1 || atoi(rules) == 2) && (checkplayernum(playernum, atoi(decider)) == 0))
                             {
                                 bzero(sql_command, 1000);
                                 sprintf(sql_command, "INSERT INTO CHAMPIONSHIPS VALUES ((SELECT MAX(ID) FROM CHAMPIONSHIPS) + 1, '%s', %d, %d, %d, 0, 0);", game_name, atoi(playernum), atoi(rules), atoi(decider));
                                 rc = sqlite3_exec(db, sql_command, nullptr, nullptr, &zErrMsg);
 
-                                write(client, CYAN "[Server]" GREEN " Championship created successfully.\n" CYAN "[Server]" BLUE " Enter command: " RESET, 100);
+                                write(client, CYAN "[Server] " GREEN "Player number set. " BLUE "Trying to create championship...\n" CYAN "[Server]" GREEN " Championship created successfully.\n" CYAN "[Server]" BLUE " Enter command: " RESET, 182);
                             }
                             else
                             {
-                                write(client, RED "[Server] Wrong inputs. Championship not created.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 98);
+                                write(client, CYAN "[Server] " GREEN "Player number set. " BLUE "Trying to create championship...\n" RED "[Server] Wrong inputs. Championship not created.\n" CYAN "[Server] " BLUE "Enter command: " RESET, 180);
                             }
                         }
                         else
@@ -662,7 +682,6 @@ int main()
                         char max_id[4];
                         char championships[5000];
                         bzero(championships, 5000);
-                        sprintf(championships, "ID\tGame name\t\tPlayer no.\t\tRules\t\tDecider\t\tPlayers entered\n");
 
                         bzero(sql_command, 4000);
                         sprintf(sql_command, "SELECT MAX(ID) FROM CHAMPIONSHIPS;");
@@ -710,11 +729,11 @@ int main()
                                     strcpy(decide, "Alphabetical order");
                                 }
 
-                                sprintf(championships + strlen(championships), BLUE "%s\t" YELLOW "%s\t%s\t\t%s\t\t%s\t\t%s\n" RESET, champ_id, game_name, playercount, rule, decide, playerentered);
+                                sprintf(championships + strlen(championships), MAGENTA "ID: " YELLOW "%s\n\t" MAGENTA "Game name: " YELLOW "%s\n\t" MAGENTA "Player count: " YELLOW "%s\n\t" MAGENTA "Rule: " YELLOW "%s\n\t" MAGENTA "Decider: " YELLOW "%s\n\t" MAGENTA "Players entered: " YELLOW "%s\n" RESET, champ_id, game_name, playercount, rule, decide, playerentered);
 
                                 id++;
                             }
-                            sprintf(championships + strlen(championships), CYAN "[Server] " BLUE "Enter command:");
+                            sprintf(championships + strlen(championships), CYAN "[Server] " BLUE "Enter command: " RESET);
                             write(client, championships, sizeof(championships));
                         }
                         else

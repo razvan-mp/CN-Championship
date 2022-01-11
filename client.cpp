@@ -10,8 +10,6 @@
 #include <arpa/inet.h>
 #include <string.h>
 
-//extern int errno;
-
 int main()
 {
     int sd;                    // descriptorul de socket
@@ -23,7 +21,7 @@ int main()
     if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
         perror("[Client] Error on socket().\n");
-        return errno;
+        return 1;
     }
 
     server.sin_family = AF_INET;
@@ -33,7 +31,7 @@ int main()
     if (connect(sd, (struct sockaddr *)&server, sizeof(struct sockaddr)) == -1)
     {
         perror("[Client] Error on connect().\n");
-        return errno;
+        return 1;
     }
 
     if (read(sd, received, 5000) < 0)
@@ -57,14 +55,14 @@ int main()
 
         if (strcmp(msg, "\n") == 0)
         {
-            write(sd, "!", 1);
+            write(sd, " ", 1);
         }
         else
         {
             if (write(sd, msg, strlen(msg) - 1) <= 0)
             {
                 perror("[Client] Error on write() to the server.\n");
-                return errno;
+                return 1;
             }
         }
 
@@ -72,7 +70,7 @@ int main()
         if (read(sd, msg, 5000) < 0)
         {
             perror("[Client] Error on read() from server.\n");
-            return errno;
+            return 1;
         }
 
         printf("%s", msg);
