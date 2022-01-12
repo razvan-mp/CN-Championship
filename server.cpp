@@ -23,6 +23,7 @@
 
 std::vector<std::string> players;
 
+// remove losers from players
 void remove_from_players(std::vector<std::string> losers)
 {
     for (auto player_name : losers)
@@ -43,6 +44,10 @@ static int callback1(void *ans, int argc, char **argv, char **azColName)
     return 0;
 }
 
+// sqlite3 callback for SELECT
+// this one pushes player names in a vector of strings to
+// create players vector and allow the use of the remove_from_players
+// function to more easily remove losers from the vector
 static int callback2(void *ans, int argc, char **argv, char **azColName)
 {
     std::string tmp(argv[0]);
