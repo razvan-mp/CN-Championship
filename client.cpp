@@ -1,21 +1,16 @@
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <sqlite3.h>
-#include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <netdb.h>
 #include <arpa/inet.h>
 #include <string.h>
 
 int main()
 {
-    int sd;                    // descriptorul de socket
-    struct sockaddr_in server; // structura folosita pentru conectare
-    char msg[5000];            // mesajul trimis
-    char received[5000];
+    int sd;                     // socket descriptor
+    struct sockaddr_in server;  // struct used for connect
+    char msg[5000];             // sent message
+    char received[5000];        // received message
 
     // create socket
     if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1)

@@ -7,9 +7,7 @@
 #include <cerrno>
 #include <sqlite3.h>
 #include <ctime>
-#include <string>
 #include <regex>
-#include <algorithm>
 
 #define RED "\e[1;31m"
 #define GREEN "\e[1;32m"
